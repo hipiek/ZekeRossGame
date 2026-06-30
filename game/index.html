@@ -30,6 +30,7 @@
   <div class="hud-side">
     <div class="hud-pill"><span id="cps-amt">0</span><small>/sec</small></div>
     <div class="hud-pill gem"><span id="gem-amt">0</span><small>💎</small></div>
+    <div class="hud-pill star"><span id="star-amt">0</span><small>⭐</small></div>
     <div class="hud-pill infl"><span id="infl-amt">×1.00</span><small>infl</small></div>
   </div>
 </header>
@@ -71,17 +72,54 @@
 
   <!-- ===================== SUMMON SCREEN ===================== -->
   <section id="screen-summon" class="screen">
-    <div class="screen-head"><h2>Snap Summon</h2></div>
-    <p class="hint">Spend Snaps 💎 to summon random squad members. Duplicates instantly level them up!</p>
-    <div class="summon-stage">
-      <div class="summon-orb">👻</div>
+    <div id="banner-tabs" class="banner-tabs"></div>
+
+    <div class="banner-head">
+      <div>
+        <h2 id="banner-name">Snap Summon</h2>
+        <p id="banner-tagline" class="banner-tagline">Featured Legendary — limited time</p>
+      </div>
+      <span id="banner-timer" class="banner-timer">⏳ —</span>
     </div>
+
+    <div id="featured-stage" class="featured-stage"></div>
+
+    <div class="pity-box">
+      <div class="pity-row">
+        <span>Guaranteed <b id="pity-top">Legendary</b> in <b id="pity-count">100</b> pulls</span>
+        <span id="fifty-state" class="fifty">50/50 next</span>
+      </div>
+      <div class="pity-track"><div id="pity-fill" class="pity-fill"></div></div>
+    </div>
+
     <div class="summon-buttons">
-      <button id="pull-1" class="big-btn">Single Summon · <b id="single-cost">5</b>💎</button>
-      <button id="pull-10" class="big-btn alt">10× Summon · <b id="ten-cost">45</b>💎</button>
+      <button id="pull-1" class="big-btn">Summon ×1 · <b id="single-cost">5</b><span id="single-cur">💎</span></button>
+      <button id="pull-10" class="big-btn alt">Summon ×10 · <b id="ten-cost">45</b><span id="ten-cur">💎</span></button>
     </div>
-    <h3 class="odds-title">Drop Rates</h3>
+
+    <button id="wishlist-open" class="wishlist-btn">💖 Wishlist <span id="wishlist-count">0/5</span></button>
+
+    <h3 class="odds-title">Drop Rates <small>(▲ = rate-up)</small></h3>
     <div id="odds-list" class="odds"></div>
+    <p class="hint center">Common & Rare pulls refund half their recruit price as 💠 Clout. Epic+ are summon-only.</p>
+  </section>
+
+  <!-- ===================== SHOP SCREEN ===================== -->
+  <section id="screen-shop" class="screen">
+    <div class="screen-head"><h2>Clout Shop</h2></div>
+    <div class="shop-construction">
+      <div class="shop-cones">🚧</div>
+      <h3>Under Construction</h3>
+      <p>The Clout Shop is being built. Soon you'll trade Clout & Snaps for bundles,
+         Star Snaps, boosts and exclusive cosmetics.</p>
+      <div class="shop-soon">
+        <div class="soon-card">💎 Snap Bundles</div>
+        <div class="soon-card">⭐ Star Packs</div>
+        <div class="soon-card">⚡ Boost Deals</div>
+        <div class="soon-card">🎨 Cosmetics</div>
+      </div>
+      <p class="muted">Check back in a future update!</p>
+    </div>
   </section>
 
   <!-- ===================== BOOSTS SCREEN ===================== -->
@@ -129,15 +167,33 @@
   <button data-nav="squad"><span>👥</span>Squad</button>
   <button data-nav="summon"><span>✨</span>Summon</button>
   <button data-nav="boosts"><span>🚀</span>Boosts</button>
+  <button data-nav="shop"><span>🛒</span>Shop</button>
   <button data-nav="stats"><span>📊</span>More</button>
 </nav>
 
 <!-- ===================== OVERLAYS ===================== -->
-<div id="summon-overlay" class="overlay">
-  <div class="overlay-inner">
-    <h2 class="summon-title">✨ SUMMON ✨</h2>
-    <div id="summon-cards" class="summon-cards"></div>
-    <p class="tap-dismiss">tap anywhere to continue</p>
+<div id="summon-overlay" class="overlay summon-overlay">
+  <div id="summon-charge" class="summon-charge">
+    <div class="charge-rays"></div>
+    <div class="charge-ring"></div>
+    <div class="charge-core">👻</div>
+  </div>
+  <div id="summon-cards" class="summon-cards"></div>
+  <button id="summon-skip" class="summon-skip">SKIP ⏩</button>
+  <button id="summon-continue" class="summon-continue">TAP TO CONTINUE</button>
+</div>
+
+<!-- ===================== WISHLIST MODAL ===================== -->
+<div id="wishlist-overlay" class="overlay">
+  <div class="overlay-inner card-panel wishlist-panel">
+    <div class="wishlist-head">
+      <h2>💖 Wishlist</h2>
+      <button id="wishlist-close" class="x-btn">✕</button>
+    </div>
+    <p class="hint">Pick up to 5 roll-only stars. When you pull a top-rarity off the
+       featured rate-up, it's drawn from your wishlist first.</p>
+    <div id="wishlist-modal-count" class="wishlist-modal-count">0/5 selected</div>
+    <div id="wishlist-grid" class="wishlist-grid"></div>
   </div>
 </div>
 

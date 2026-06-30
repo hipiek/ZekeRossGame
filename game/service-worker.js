@@ -1,17 +1,11 @@
 /* Snap Squad service worker — offline-first caching */
-const CACHE = "snapsquad-v1";
+const CACHE = "snapsquad-v2";
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css", "./js/data.js", "./js/game.js",
   "./manifest.webmanifest",
   "./assets/icons/icon-192.png", "./assets/icons/icon-512.png",
-  "./assets/chars/closer.webp","./assets/chars/rookie.webp","./assets/chars/swap.webp",
-  "./assets/chars/captain.webp","./assets/chars/shellshock.webp","./assets/chars/aphex.webp",
-  "./assets/chars/nightshift.webp","./assets/chars/bluehour.webp","./assets/chars/goblin.webp",
-  "./assets/chars/licker.webp","./assets/chars/toxic.webp","./assets/chars/frost.webp",
-  "./assets/chars/golfgod.webp","./assets/chars/phantom.webp","./assets/chars/possessed.webp",
-  "./assets/chars/mustache.webp","./assets/chars/stormcaller.webp","./assets/chars/contractor.webp",
-  "./assets/chars/panmaster.webp","./assets/chars/cursed.webp"
+  "./assets/chars/android.webp","./assets/chars/aphex.webp","./assets/chars/bedhead.webp","./assets/chars/billion.webp","./assets/chars/bluehour.webp","./assets/chars/captain.webp","./assets/chars/chin.webp","./assets/chars/closer.webp","./assets/chars/contractor.webp","./assets/chars/cursed.webp","./assets/chars/deckhand.webp","./assets/chars/doppel.webp","./assets/chars/drowsy.webp","./assets/chars/feral.webp","./assets/chars/freshface.webp","./assets/chars/frost.webp","./assets/chars/goblin.webp","./assets/chars/golfgod.webp","./assets/chars/grin.webp","./assets/chars/licker.webp","./assets/chars/lowkey.webp","./assets/chars/lurker.webp","./assets/chars/mustache.webp","./assets/chars/nightshift.webp","./assets/chars/panmaster.webp","./assets/chars/phantom.webp","./assets/chars/possessed.webp","./assets/chars/regular.webp","./assets/chars/rookie.webp","./assets/chars/selfie.webp","./assets/chars/shellshock.webp","./assets/chars/skipper.webp","./assets/chars/smug.webp","./assets/chars/stormcaller.webp","./assets/chars/swap.webp","./assets/chars/tastemaker.webp","./assets/chars/tourist.webp","./assets/chars/toxic.webp","./assets/chars/trippy.webp","./assets/chars/unhinged.webp"
 ];
 
 self.addEventListener("install", e => {

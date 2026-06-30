@@ -241,5 +241,174 @@ small{ font-weight:600; }
 .big-earn{ font-size:28px; font-weight:900; color:var(--gold); margin:14px 0; }
 .card-panel .big-btn{ margin-top:10px; }
 
+/* ============================================================
+   v1.1 — dual-banner gacha, animations, wishlist, shop
+   ============================================================ */
+.center{ text-align:center; }
+.hud-pill.star span{ color:#ffd95e; }
+.floater.star{ color:#ffd95e; font-size:22px; }
+
+/* full-screen shake */
+body.sshaking{ animation:sshake .5s ease; }
+@keyframes sshake{
+  0%,100%{ transform:translate(0,0); }
+  20%{ transform:translate(calc(var(--sshake)*-1),var(--sshake)); }
+  40%{ transform:translate(var(--sshake),calc(var(--sshake)*-1)); }
+  60%{ transform:translate(calc(var(--sshake)*-1),0); }
+  80%{ transform:translate(var(--sshake),var(--sshake)); }
+}
+
+/* ---------------- banner tabs + head ---------------- */
+.banner-tabs{ display:flex; gap:8px; margin-top:12px; }
+.banner-tab{ flex:1; background:var(--panel); border:1px solid #2a3358; border-radius:12px; padding:10px;
+  cursor:pointer; display:flex; flex-direction:column; gap:2px; color:var(--txt); text-align:left; }
+.banner-tab span{ font-weight:800; font-size:13px; }
+.banner-tab small{ color:var(--muted); font-size:10px; font-weight:700; }
+.banner-tab.on{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), 0 8px 20px -10px var(--accent); }
+.banner-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin:16px 0 4px; }
+.banner-head h2{ margin:0; font-size:20px; }
+.banner-tagline{ color:var(--muted); font-size:12px; margin:2px 0 0; }
+.banner-timer{ background:var(--panel); border:1px solid #2a3358; padding:5px 10px; border-radius:20px;
+  font-size:11px; font-weight:700; white-space:nowrap; }
+
+/* ---------------- featured stage ---------------- */
+.featured-stage{ position:relative; height:240px; border-radius:18px; overflow:hidden; margin:8px 0 6px;
+  border:1px solid #2a3358; background:#0b0f1a; display:flex; align-items:flex-end; }
+.feat-rays{ position:absolute; inset:-45% 0; z-index:0;
+  background:conic-gradient(from 0deg at 50% 38%, transparent, var(--accent), transparent, var(--accent), transparent);
+  opacity:.22; animation:spin 18s linear infinite; }
+.feat-glow{ position:absolute; left:50%; top:34%; width:220px; height:220px; transform:translate(-50%,-50%); z-index:1;
+  border-radius:50%; background:radial-gradient(circle,var(--accent),transparent 62%); opacity:.5; filter:blur(8px);
+  animation:pulse 3s ease-in-out infinite; }
+.feat-img{ position:absolute; left:50%; top:14px; transform:translateX(-50%); z-index:2;
+  height:168px; width:168px; object-fit:cover; border-radius:50%;
+  box-shadow:0 0 0 4px var(--accent), 0 12px 32px rgba(0,0,0,.55); }
+.feat-badge{ position:absolute; top:12px; left:12px; z-index:3; font-size:9px; font-weight:900; color:#0b0f1a;
+  padding:4px 9px; border-radius:10px; letter-spacing:.5px; }
+.feat-meta{ position:relative; z-index:3; width:100%; padding:14px; text-align:center;
+  background:linear-gradient(180deg,transparent,rgba(7,9,16,.92) 60%); }
+.feat-name{ font-size:21px; font-weight:900; }
+.feat-quote{ font-size:11px; color:var(--muted); font-style:italic; margin-top:3px; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* ---------------- pity meter ---------------- */
+.pity-box{ background:var(--panel); border:1px solid #2a3358; border-radius:14px; padding:11px 14px; margin:8px 0; }
+.pity-row{ display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--muted);
+  margin-bottom:8px; gap:8px; }
+.pity-row b{ color:var(--txt); }
+.fifty{ font-weight:800; font-size:11px; color:var(--muted); background:#222b47; padding:3px 9px; border-radius:8px; white-space:nowrap; }
+.fifty.guaranteed{ color:#0b0f1a; background:var(--gold); }
+.pity-track{ height:7px; background:#222b47; border-radius:6px; overflow:hidden; }
+.pity-fill{ height:100%; width:0; background:var(--gold); transition:width .3s; }
+
+/* summon buttons + wishlist + odds */
+.summon-buttons{ margin-top:4px; }
+.big-btn b{ font-size:18px; }
+.wishlist-btn{ width:100%; margin-top:12px; background:var(--panel2); border:1px solid #3a4570; color:var(--txt);
+  padding:12px; border-radius:14px; font-weight:800; font-size:14px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px; }
+.wishlist-btn span{ color:var(--gold); }
+.odd.up{ border-color:var(--gold); }
+
+/* ---------------- SHOP (under construction) ---------------- */
+.shop-construction{ text-align:center; background:var(--panel); border:1px dashed #3a4570; border-radius:18px;
+  padding:30px 20px; margin-top:14px; }
+.shop-cones{ font-size:54px; animation:bob 1.7s ease-in-out infinite; }
+.shop-construction h3{ margin:8px 0 6px; font-size:20px; color:var(--gold); }
+.shop-construction p{ color:var(--muted); font-size:13px; line-height:1.6; max-width:330px; margin:0 auto 12px; }
+.shop-soon{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
+.soon-card{ background:var(--panel2); border:1px solid #2a3358; border-radius:12px; padding:16px 10px;
+  font-weight:800; font-size:13px; opacity:.75; }
+
+/* ---------------- SUMMON overlay / animation ---------------- */
+.summon-overlay{ flex-direction:column; gap:16px; background:rgba(4,6,12,.92); }
+.summon-charge{ position:relative; width:min(70vw,300px); height:min(70vw,300px);
+  display:flex; align-items:center; justify-content:center; }
+.summon-charge.done{ display:none; }
+.charge-core{ position:relative; z-index:2; font-size:92px; filter:drop-shadow(0 0 26px var(--accent)); }
+.charge-ring{ position:absolute; inset:20%; z-index:1; border-radius:50%; border:3px solid var(--accent); opacity:.55; }
+.charge-rays{ position:absolute; inset:-8%; z-index:0; border-radius:50%;
+  background:conic-gradient(from 0deg, transparent, var(--accent), transparent, var(--accent), transparent);
+  opacity:.28; filter:blur(2px); }
+.summon-charge.charging .charge-rays{ animation:spin 3s linear infinite; }
+.summon-charge.charging .charge-core{ animation:chargePulse 1.1s ease-in-out infinite; }
+.summon-charge.charging .charge-ring{ animation:ringPulse 1.1s ease-in-out infinite; }
+.summon-charge.peak .charge-core{ animation:chargePulse .32s ease-in-out infinite; }
+.summon-charge.peak .charge-rays{ animation:spin .8s linear infinite; opacity:.55; }
+.summon-charge.peak .charge-ring{ animation:ringPulse .32s ease-in-out infinite; }
+.summon-charge.burst{ animation:chargeBurst .42s ease-out forwards; }
+@keyframes chargePulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.13); } }
+@keyframes ringPulse{ 0%,100%{ transform:scale(1); opacity:.5; } 50%{ transform:scale(1.2); opacity:.95; } }
+@keyframes chargeBurst{ 0%{ transform:scale(1); opacity:1; } 55%{ transform:scale(1.7); opacity:1; } 100%{ transform:scale(2.6); opacity:0; } }
+
+.summon-flash{ position:fixed; inset:0; z-index:54; pointer-events:none; animation:flashOut .65s ease-out forwards; }
+@keyframes flashOut{ 0%{ opacity:0; } 12%{ opacity:1; } 100%{ opacity:0; } }
+
+/* reveal cards (override old single-face styles) */
+.summon-cards{ display:none; }
+.summon-cards.show{ display:grid; gap:12px; justify-content:center; align-content:center;
+  width:100%; max-height:76vh; overflow-y:auto; padding:6px; }
+.summon-cards.single{ grid-template-columns:1fr; max-width:240px; }
+.summon-cards.multi{ grid-template-columns:repeat(5,1fr); max-width:560px; }
+.reveal-card{ width:auto; background:none; border:none; padding:0; perspective:800px; animation:none; }
+.rv-inner{ position:relative; width:100%; aspect-ratio:3/4.1; transform-style:preserve-3d;
+  transform:rotateY(0deg); animation:flipIn .55s cubic-bezier(.2,.8,.25,1) forwards; animation-delay:var(--d,0s); }
+.summon-cards.single .rv-inner{ aspect-ratio:3/3.7; }
+@keyframes flipIn{ from{ transform:rotateY(0deg); } to{ transform:rotateY(180deg); } }
+.rv-back,.rv-front{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  border-radius:14px; overflow:hidden; }
+.rv-back{ background:linear-gradient(160deg,#2a3358,#141a2e); border:2px solid #3a4570;
+  display:flex; align-items:center; justify-content:center; }
+.rv-back span{ font-size:42px; font-weight:900; color:#4a5580; }
+.rv-front{ transform:rotateY(180deg); border:2px solid var(--ring,#888); background:#11162a;
+  box-shadow:0 0 22px -4px var(--ring,#888); }
+.rv-front img{ width:100%; height:100%; object-fit:cover; }
+.rv-rays{ display:none; }
+.reveal-card.cinematic .rv-rays{ display:block; position:absolute; inset:-35%; z-index:0;
+  background:conic-gradient(from 0deg, transparent, var(--ring), transparent, var(--ring), transparent);
+  opacity:.45; animation:spin 4s linear infinite; }
+.reveal-card.cinematic .rv-front{ box-shadow:0 0 30px -2px var(--ring), 0 0 64px -12px var(--ring); }
+.rv-grad{ position:absolute; inset:0; z-index:1;
+  background:linear-gradient(180deg,transparent 42%,rgba(8,10,20,.93)); }
+.rv-info{ position:absolute; left:0; right:0; bottom:6px; z-index:2; text-align:center; padding:0 6px; }
+.rv-rar{ font-size:10px; font-weight:900; letter-spacing:.5px; }
+.rv-name{ font-size:12px; font-weight:800; line-height:1.12; margin-top:1px; }
+.rv-tag{ position:absolute; top:6px; right:6px; z-index:3; font-size:9px; font-weight:900; padding:2px 6px;
+  border-radius:8px; background:var(--gold); color:#0b0f1a; margin:0; }
+.rv-tag.dupe{ background:#3a4570; color:#cdd6f5; }
+.rv-feat{ position:absolute; top:6px; left:6px; z-index:3; font-size:8px; font-weight:900; padding:2px 5px;
+  border-radius:8px; background:#fff; color:#0b0f1a; }
+.rv-refund{ position:absolute; top:26px; left:50%; transform:translateX(-50%); z-index:3; font-size:9px;
+  font-weight:900; padding:2px 7px; border-radius:8px; background:rgba(8,10,20,.8); color:var(--gold); white-space:nowrap; }
+
+.summon-skip{ position:fixed; top:calc(var(--safe-top) + 14px); right:16px; z-index:85; display:none;
+  background:rgba(20,26,46,.8); border:1px solid #3a4570; color:#cdd6f5; padding:8px 14px; border-radius:20px;
+  font-weight:800; font-size:12px; cursor:pointer; }
+.summon-skip.show{ display:block; }
+.summon-continue{ position:fixed; bottom:calc(var(--safe-bot) + 22px); left:50%; transform:translateX(-50%);
+  z-index:85; display:none; background:#fff; color:#0b0f1a; padding:13px 30px; border-radius:24px;
+  font-weight:900; font-size:14px; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.5);
+  animation:bob 1.8s ease-in-out infinite; }
+.summon-continue.show{ display:block; }
+
+/* ---------------- wishlist modal ---------------- */
+.wishlist-panel{ max-width:460px; width:100%; max-height:84vh; display:flex; flex-direction:column; text-align:left; }
+.wishlist-head{ display:flex; justify-content:space-between; align-items:center; }
+.wishlist-head h2{ margin:0; }
+.x-btn{ background:var(--panel2); border:1px solid #3a4570; color:var(--txt); width:34px; height:34px;
+  border-radius:10px; font-size:15px; cursor:pointer; }
+.wishlist-modal-count{ font-weight:800; font-size:13px; color:var(--gold); margin:8px 0 10px; }
+.wishlist-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; overflow-y:auto; padding-right:2px; }
+.wish-card{ background:var(--panel2); border:1px solid #2a3358; border-radius:13px; padding:8px; cursor:pointer; text-align:center; }
+.wish-card.on{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold); }
+.wish-port{ position:relative; }
+.wish-port img{ width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; box-shadow:0 0 0 2px var(--ring); }
+.wish-check{ position:absolute; top:4px; right:4px; background:var(--gold); color:#0b0f1a; width:22px; height:22px;
+  border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; }
+.wish-owned{ position:absolute; bottom:4px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.72);
+  color:var(--green); font-size:8px; font-weight:900; padding:2px 6px; border-radius:6px; }
+.wish-name{ font-weight:800; font-size:12px; margin-top:5px; line-height:1.12; }
+.wish-rar{ font-size:10px; font-weight:800; }
+
 /* scrollbar */
 ::-webkit-scrollbar{ width:0; height:0; }

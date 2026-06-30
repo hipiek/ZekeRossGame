@@ -25,29 +25,36 @@ app (custom icon, fullscreen, offline play).
 | **Tap to earn** | Tap the featured member for Clout. Crits (12×) + screen shake + particles. |
 | **Combo meter** | Rapid taps build up to a 30-step combo multiplier that decays if you stop. |
 | **Idle income** | Every recruited member generates Clout/sec, even while you're away (offline earnings, 50% rate, 8h cap). |
-| **Squad / collection** | Recruit & level all 20 crew members. Rarity tiers: Common → Rare → Epic → Legendary → Mythic. |
-| **Snap Summon (gacha)** | Spend Snaps 💎 for single or 10× pulls with animated rarity reveals. Dupes auto-level. |
+| **Squad / collection** | Recruit & level all **40** crew members. Rarity tiers: Common → Rare → Epic → Legendary → Mythic. Common/Rare are buyable with Clout; **Epic+ are summon-only**. |
+| **Dual-banner gacha (ZZZ-style)** | Two live campaigns with featured rate-up characters: **Snap Summon** (💎 Snaps, featured Legendary) and **Prestige Summon** (⭐ Star Snaps, featured Mythic). Cinematic charge-up + flip reveals. |
+| **Pity + 50/50** | Hard pity guarantees the banner's top rarity within **100 pulls** (live countdown). Lose the 50/50 and your next top pull is a **guaranteed featured**. |
+| **Wishlist** | Pick up to 5 roll-only stars; off-featured top pulls are drawn from your wishlist first. |
+| **Low-rank refunds** | Rolling a Common/Rare refunds **half its recruit price** as Clout, so pulls are never wasted. |
 | **Boosts / abilities** | Owned members unlock active abilities (Tap Frenzy, Overdrive, Gold Rush, Clout Bomb, Blackout) on cooldowns. |
-| **Golden Snaps** | Ghosts drift across the screen — tap them for Clout bursts, frenzies, or gems. |
-| **Daily rewards** | Login streak rewards (more gems the longer your streak). |
-| **Rebrand (prestige)** | Reset for permanent **Influence** multiplier once you hit 1B total Clout. |
-| **Achievements** | 16 goals that pay out Snaps 💎. |
+| **Golden Snaps** | Ghosts drift across the screen — tap them for Clout bursts, frenzies, Snaps, or rare Star Snaps. |
+| **Daily rewards** | Login streak rewards (Snaps, plus a Star Snap every 7th day). |
+| **Rebrand (prestige)** | Reset for a permanent **Influence** multiplier (+3 ⭐) once you hit 1B total Clout. |
+| **Shop** | Clout Shop screen (under construction — bundles, Star packs, boosts & cosmetics coming). |
+| **Achievements** | 17 goals that pay out Snaps 💎. |
 | **Saves** | Auto-saves to `localStorage`; offline-capable via service worker. |
 
 ## 👥 The roster
 
-All 20 members are drawn from the crew's own photos, each with a rarity, a title,
-and a quote riffing on their shot — from **The Closer** (your free starter) and
-**Captain Bahia** up through Legendaries like **Mega Mustache**, **Stormcaller**,
-and **The Contractor**, to the Mythic **Pan Master** (ascended into the zeke pan)
-and **The Cursed One**.
+All **40** members are drawn from the crew's own photos, each with a rarity, a
+title, and a quote riffing on their shot — from **The Closer** (your free starter)
+and a deep bench of buyable Commons/Rares (Bedhead, The Skipper, Smug Mode,
+Tastemaker, Deckhand, Fresh Face, Perfect Selfie…) up through summon-only
+Legendaries like **1 Billion O'Clock**, **Mega Mustache**, **Stormcaller**, and
+**The Contractor**, to Mythics **Unhinged**, **Pan Master** (ascended into the
+zeke pan), and **The Cursed One**.
 
 ## 🛠️ Tech
 
 - Vanilla JS / CSS / HTML — zero dependencies, ~one engine file.
 - `js/data.js` — roster, rarities, abilities, achievements (easy to tune/extend).
 - `js/game.js` — engine: economy, tapping, gacha, boosts, prestige, save/load, loop.
-- Portraits processed from the source photos by `scripts/process_chars.py` (Pillow).
+- Portraits processed from the source photos by `scripts/process_chars.py` and
+  `scripts/process_new_chars.py` (Pillow).
 - PWA: `manifest.webmanifest` + `service-worker.js`.
 
 ## 🔁 Iterating
