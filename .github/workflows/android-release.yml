@@ -1,25 +1,37 @@
 name: Build Android APK & Release
 
-# Build a sideloadable APK and attach it to a GitHub Release.
-#  - Push a tag like v1.0.0  -> builds the APK and publishes a Release.
-#  - Run manually (workflow_dispatch) -> builds the APK as a downloadable
-#    workflow artifact (no Release created).
+# Build a sideloadable APK and publish it to a GitHub Release.
+#
+# Triggers (any of):
+#   - push a tag like v1.0.0
+#   - push a commit whose message contains "[release]"
+#   - run manually from the Actions tab (workflow_dispatch)
+#
+# The release tag/version is taken from the pushed tag, the workflow_dispatch
+# input, or (fallback) the "version" field in package.json -> v<version>.
 on:
   push:
+    branches:
+      - '**'
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version label for the APK filename (manual builds)'
+        description: 'Release version, e.g. v1.0.0 (defaults to package.json version)'
         required: false
-        default: 'dev'
+        default: ''
 
 permissions:
   contents: write
 
 jobs:
   build:
+    # Only do the (heavy) build when we actually intend to release.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.ref_type == 'tag' ||
+      contains(github.event.head_commit.message, '[release]')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,6 +55,19 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
+      - name: Resolve release version
+        id: ver
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            V="${{ github.ref_name }}"
+          elif [ -n "${{ github.event.inputs.version }}" ]; then
+            V="${{ github.event.inputs.version }}"
+          else
+            V="v$(node -p "require('./package.json').version")"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $V"
+
       - name: Install dependencies
         run: npm ci
 
@@ -62,36 +87,35 @@ jobs:
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Stage APK with versioned name
-        id: stage
         run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            VERSION="${{ github.ref_name }}"
-          else
-            VERSION="${{ github.event.inputs.version }}"
-          fi
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk "dist/SnapSquad-${VERSION}.apk"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+             "dist/SnapSquad-${{ steps.ver.outputs.version }}.apk"
           ls -lh dist
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SnapSquad-${{ steps.stage.outputs.version }}
+          name: SnapSquad-${{ steps.ver.outputs.version }}
           path: dist/*.apk
           if-no-files-found: error
 
       - name: Publish GitHub Release
-        if: github.ref_type == 'tag'
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          github.ref_type == 'tag' ||
+          contains(github.event.head_commit.message, '[release]')
         uses: softprops/action-gh-release@v2
         with:
-          name: SNAP SQUAD ${{ steps.stage.outputs.version }}
+          tag_name: ${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: SNAP SQUAD ${{ steps.ver.outputs.version }}
           files: dist/*.apk
           generate_release_notes: true
           body: |
-            ## 📱 SNAP SQUAD: Clout Empire — ${{ steps.stage.outputs.version }}
+            ## 📱 SNAP SQUAD: Clout Empire — ${{ steps.ver.outputs.version }}
 
-            Download **`SnapSquad-${{ steps.stage.outputs.version }}.apk`** below and install it on your Android phone.
+            Download **`SnapSquad-${{ steps.ver.outputs.version }}.apk`** below and install it on your Android phone.
 
             ### Install
             1. Download the `.apk` to your phone.

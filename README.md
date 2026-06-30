@@ -45,16 +45,20 @@ fully offline with no server.
 
 ### Cut a release
 
-Push a version tag; CI builds the APK and attaches it to a new GitHub Release:
+CI builds the APK and publishes a GitHub Release when any of these happen:
+
+- a `v*` tag is pushed (e.g. `v1.0.0`), **or**
+- a commit message contains `[release]`, **or**
+- the **"Build Android APK & Release"** workflow is run manually from the Actions tab.
+
+The release version comes from the tag, the manual input, or the `version`
+field in [`package.json`](package.json) (→ `v<version>`). The release tag is
+created by CI, so no local tag push is required:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git commit -m "Ship the build [release]"
+git push
 ```
-
-You can also run the **"Build Android APK & Release"** workflow manually
-(Actions tab → *Run workflow*) to get the APK as a downloadable build artifact
-without publishing a Release.
 
 ### Build the APK locally
 
