@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="icon" href="assets/icons/icon-192.png" type="image/png">
+<title>Snap Squad: Clout Empire</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- FX layer for floaters/particles/golden snaps -->
+<div id="fx-layer"></div>
+<div id="toast"></div>
+
+<!-- ===================== HUD ===================== -->
+<header id="hud">
+  <div class="hud-main">
+    <div class="hud-clout">
+      <span id="clout-amt">0</span>
+      <small>CLOUT</small>
+    </div>
+  </div>
+  <div class="hud-side">
+    <div class="hud-pill"><span id="cps-amt">0</span><small>/sec</small></div>
+    <div class="hud-pill gem"><span id="gem-amt">0</span><small>💎</small></div>
+    <div class="hud-pill infl"><span id="infl-amt">×1.00</span><small>infl</small></div>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- ===================== TAP SCREEN ===================== -->
+  <section id="screen-tap" class="screen active">
+    <div id="combo-wrap">
+      <div class="combo-top"><span id="combo-mult">1.00×</span><span id="combo-count">0 combo</span></div>
+      <div class="combo-track"><div id="combo-fill"></div></div>
+    </div>
+
+    <div id="hero-stage">
+      <div class="hero-aura"></div>
+      <img id="hero-img" src="" alt="Featured squad member" draggable="false">
+      <div class="tap-hint">TAP</div>
+    </div>
+
+    <div id="hero-card">
+      <div class="hero-row">
+        <span id="hero-name">—</span>
+        <span id="hero-rarity" class="rarity-badge">—</span>
+      </div>
+      <p id="hero-quote">“…”</p>
+      <div class="tap-power-line">Tap power: <b id="tap-power">1</b></div>
+    </div>
+  </section>
+
+  <!-- ===================== SQUAD SCREEN ===================== -->
+  <section id="screen-squad" class="screen">
+    <div class="screen-head">
+      <h2>Your Squad</h2>
+      <span class="counter" id="squad-count">0/0</span>
+    </div>
+    <p class="hint">Recruit the crew with Clout. Level them up for more income &amp; tap power. Feature anyone to tap them.</p>
+    <div id="squad-list"></div>
+  </section>
+
+  <!-- ===================== SUMMON SCREEN ===================== -->
+  <section id="screen-summon" class="screen">
+    <div class="screen-head"><h2>Snap Summon</h2></div>
+    <p class="hint">Spend Snaps 💎 to summon random squad members. Duplicates instantly level them up!</p>
+    <div class="summon-stage">
+      <div class="summon-orb">👻</div>
+    </div>
+    <div class="summon-buttons">
+      <button id="pull-1" class="big-btn">Single Summon · <b id="single-cost">5</b>💎</button>
+      <button id="pull-10" class="big-btn alt">10× Summon · <b id="ten-cost">45</b>💎</button>
+    </div>
+    <h3 class="odds-title">Drop Rates</h3>
+    <div id="odds-list" class="odds"></div>
+  </section>
+
+  <!-- ===================== BOOSTS SCREEN ===================== -->
+  <section id="screen-boosts" class="screen">
+    <div class="screen-head"><h2>Boosts &amp; Abilities</h2></div>
+    <div id="active-boosts" class="active-boosts"></div>
+    <p class="hint">Fire off your squad's signature abilities. Each has its own cooldown.</p>
+    <div id="boost-list"></div>
+  </section>
+
+  <!-- ===================== STATS / MORE SCREEN ===================== -->
+  <section id="screen-stats" class="screen">
+    <div class="screen-head"><h2>Daily Reward</h2></div>
+    <div id="daily-box" class="daily-box"></div>
+
+    <div class="screen-head"><h2>Rebrand <small>(Prestige)</small></h2></div>
+    <div class="prestige-box">
+      <div class="prestige-row"><span>Influence</span><b id="infl-have">0</b></div>
+      <div class="prestige-row"><span>Pending</span><b id="infl-pending" class="green">+0</b></div>
+      <div class="prestige-row"><span>New multiplier</span><b id="infl-bonus">×1.00</b></div>
+      <button id="rebrand-btn" class="big-btn alt">♻️ Rebrand</button>
+      <p id="rebrand-note" class="hint"></p>
+    </div>
+
+    <div class="screen-head"><h2>Stats</h2></div>
+    <div id="stats-list" class="stats-list"></div>
+
+    <div class="screen-head"><h2>Achievements</h2></div>
+    <div id="ach-list" class="ach-list"></div>
+
+    <div class="screen-head"><h2>Settings</h2></div>
+    <div class="settings-box">
+      <label class="opt"><span>Sound &amp; effects</span><input type="checkbox" id="opt-sfx" checked></label>
+      <label class="opt"><span>Haptics (vibrate)</span><input type="checkbox" id="opt-haptics" checked></label>
+      <button id="wipe-btn" class="danger-btn">Erase all progress</button>
+      <p class="credit">SNAP SQUAD: Clout Empire — starring the crew. Tap responsibly.</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== BOTTOM NAV ===================== -->
+<nav id="bottom-nav">
+  <button data-nav="tap" class="on"><span>👆</span>Tap</button>
+  <button data-nav="squad"><span>👥</span>Squad</button>
+  <button data-nav="summon"><span>✨</span>Summon</button>
+  <button data-nav="boosts"><span>🚀</span>Boosts</button>
+  <button data-nav="stats"><span>📊</span>More</button>
+</nav>
+
+<!-- ===================== OVERLAYS ===================== -->
+<div id="summon-overlay" class="overlay">
+  <div class="overlay-inner">
+    <h2 class="summon-title">✨ SUMMON ✨</h2>
+    <div id="summon-cards" class="summon-cards"></div>
+    <p class="tap-dismiss">tap anywhere to continue</p>
+  </div>
+</div>
+
+<div id="offline-overlay" class="overlay">
+  <div class="overlay-inner card-panel">
+    <h2>Welcome back!</h2>
+    <p>You were away for <b id="offline-time">—</b>.</p>
+    <p class="big-earn">+<span id="offline-amt">0</span> Clout</p>
+    <p class="hint">(earned at 50% idle rate while away)</p>
+    <button id="offline-collect" class="big-btn">Collect</button>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
