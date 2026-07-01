@@ -29,8 +29,8 @@
   </div>
   <div class="hud-side">
     <div class="hud-pill"><span id="cps-amt">0</span><small>/sec</small></div>
-    <div class="hud-pill gem"><span id="gem-amt">0</span><small>💎</small></div>
-    <div class="hud-pill star"><span id="star-amt">0</span><small>⭐</small></div>
+    <div class="hud-pill gem"><span id="gem-amt">0</span><small class="cur-ic" data-ic="snap"></small></div>
+    <div class="hud-pill star"><span id="star-amt">0</span><small class="cur-ic" data-ic="star"></small></div>
     <div class="hud-pill infl"><span id="infl-amt">×1.00</span><small>infl</small></div>
   </div>
 </header>
@@ -79,7 +79,7 @@
         <h2 id="banner-name">Snap Summon</h2>
         <p id="banner-tagline" class="banner-tagline">Featured Legendary — limited time</p>
       </div>
-      <span id="banner-timer" class="banner-timer">⏳ —</span>
+      <span id="banner-timer" class="banner-timer">—</span>
     </div>
 
     <div id="featured-stage" class="featured-stage"></div>
@@ -93,30 +93,30 @@
     </div>
 
     <div class="summon-buttons">
-      <button id="pull-1" class="big-btn">Summon ×1 · <b id="single-cost">5</b><span id="single-cur">💎</span></button>
-      <button id="pull-10" class="big-btn alt">Summon ×10 · <b id="ten-cost">45</b><span id="ten-cur">💎</span></button>
+      <button id="pull-1" class="big-btn">Summon ×1 · <b id="single-cost">5</b><span id="single-cur" class="btn-cur"></span></button>
+      <button id="pull-10" class="big-btn alt">Summon ×10 · <b id="ten-cost">45</b><span id="ten-cur" class="btn-cur"></span></button>
     </div>
 
-    <button id="wishlist-open" class="wishlist-btn">💖 Wishlist <span id="wishlist-count">0/5</span></button>
+    <button id="wishlist-open" class="wishlist-btn"><span data-ic="heart"></span> Wishlist <span id="wishlist-count">0/5</span></button>
 
-    <h3 class="odds-title">Drop Rates <small>(▲ = rate-up)</small></h3>
+    <h3 class="odds-title">Drop Rates <small>(rate-up featured)</small></h3>
     <div id="odds-list" class="odds"></div>
-    <p class="hint center">Common & Rare pulls refund half their recruit price as 💠 Clout. Epic+ are summon-only.</p>
+    <p class="hint center">Common &amp; Rare pulls refund half their recruit price as Clout. Epic+ are summon-only.</p>
   </section>
 
   <!-- ===================== SHOP SCREEN ===================== -->
   <section id="screen-shop" class="screen">
     <div class="screen-head"><h2>Clout Shop</h2></div>
     <div class="shop-construction">
-      <div class="shop-cones">🚧</div>
+      <div class="shop-cones" data-ic="cones"></div>
       <h3>Under Construction</h3>
-      <p>The Clout Shop is being built. Soon you'll trade Clout & Snaps for bundles,
+      <p>The Clout Shop is being built. Soon you'll trade Clout &amp; Snaps for bundles,
          Star Snaps, boosts and exclusive cosmetics.</p>
       <div class="shop-soon">
-        <div class="soon-card">💎 Snap Bundles</div>
-        <div class="soon-card">⭐ Star Packs</div>
-        <div class="soon-card">⚡ Boost Deals</div>
-        <div class="soon-card">🎨 Cosmetics</div>
+        <div class="soon-card"><span data-ic="snap"></span> Snap Bundles</div>
+        <div class="soon-card"><span data-ic="star"></span> Star Packs</div>
+        <div class="soon-card"><span data-ic="bolt"></span> Boost Deals</div>
+        <div class="soon-card"><span data-ic="paint"></span> Cosmetics</div>
       </div>
       <p class="muted">Check back in a future update!</p>
     </div>
@@ -140,7 +140,7 @@
       <div class="prestige-row"><span>Influence</span><b id="infl-have">0</b></div>
       <div class="prestige-row"><span>Pending</span><b id="infl-pending" class="green">+0</b></div>
       <div class="prestige-row"><span>New multiplier</span><b id="infl-bonus">×1.00</b></div>
-      <button id="rebrand-btn" class="big-btn alt">♻️ Rebrand</button>
+      <button id="rebrand-btn" class="big-btn alt"><span data-ic="recycle"></span> Rebrand</button>
       <p id="rebrand-note" class="hint"></p>
     </div>
 
@@ -163,23 +163,24 @@
 
 <!-- ===================== BOTTOM NAV ===================== -->
 <nav id="bottom-nav">
-  <button data-nav="tap" class="on"><span>👆</span>Tap</button>
-  <button data-nav="squad"><span>👥</span>Squad</button>
-  <button data-nav="summon"><span>✨</span>Summon</button>
-  <button data-nav="boosts"><span>🚀</span>Boosts</button>
-  <button data-nav="shop"><span>🛒</span>Shop</button>
-  <button data-nav="stats"><span>📊</span>More</button>
+  <button data-nav="tap" class="on"><span data-ic="tap"></span>Tap</button>
+  <button data-nav="squad"><span data-ic="squad"></span>Squad</button>
+  <button data-nav="summon"><span data-ic="summon"></span>Summon</button>
+  <button data-nav="boosts"><span data-ic="boosts"></span>Boosts</button>
+  <button data-nav="shop"><span data-ic="shop"></span>Shop</button>
+  <button data-nav="stats"><span data-ic="more"></span>More</button>
 </nav>
 
 <!-- ===================== OVERLAYS ===================== -->
 <div id="summon-overlay" class="overlay summon-overlay">
   <div id="summon-charge" class="summon-charge">
-    <div class="charge-rays"></div>
-    <div class="charge-ring"></div>
-    <div class="charge-core">👻</div>
+    <div class="charge-arena">
+      <img id="summon-mascot" class="summon-mascot" src="assets/fx/summoner.webp" alt="Summoning!">
+    </div>
+    <div class="charge-word">SUMMONING</div>
   </div>
   <div id="summon-cards" class="summon-cards"></div>
-  <button id="summon-skip" class="summon-skip">SKIP ⏩</button>
+  <button id="summon-skip" class="summon-skip">SKIP <span data-ic="skip"></span></button>
   <button id="summon-continue" class="summon-continue">TAP TO CONTINUE</button>
 </div>
 
@@ -187,8 +188,8 @@
 <div id="wishlist-overlay" class="overlay">
   <div class="overlay-inner card-panel wishlist-panel">
     <div class="wishlist-head">
-      <h2>💖 Wishlist</h2>
-      <button id="wishlist-close" class="x-btn">✕</button>
+      <h2><span data-ic="heart"></span> Wishlist</h2>
+      <button id="wishlist-close" class="x-btn" data-ic="close"></button>
     </div>
     <p class="hint">Pick up to 5 roll-only stars. When you pull a top-rarity off the
        featured rate-up, it's drawn from your wishlist first.</p>
@@ -207,6 +208,7 @@
   </div>
 </div>
 
+<script src="js/icons.js"></script>
 <script src="js/data.js"></script>
 <script src="js/game.js"></script>
 </body>

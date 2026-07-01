@@ -19,11 +19,11 @@ const RARITY_ORDER = ["common","rare","epic","legendary","mythic"];
 
 /* ability types — active boosts triggered from the Boosts tab */
 const ABILITIES = {
-  frenzy:   { name: "Tap Frenzy",   desc: "Tap power ×8 for 12s",        dur: 12,  cd: 90,  icon: "👆" },
-  overdrive:{ name: "Overdrive",    desc: "Idle income ×4 for 25s",      dur: 25,  cd: 120, icon: "⚙️" },
-  goldrush: { name: "Gold Rush",    desc: "Rains 6 Golden Snaps",        dur: 0,   cd: 150, icon: "✨" },
-  cloutbomb:{ name: "Clout Bomb",   desc: "Instantly grants 90s of income", dur: 0, cd: 180, icon: "💥" },
-  blackout: { name: "Blackout",     desc: "ALL income ×10 for 8s",       dur: 8,   cd: 300, icon: "🌀" },
+  frenzy:   { name: "Tap Frenzy",   desc: "Tap power ×8 for 12s",        dur: 12,  cd: 90,  icon: "frenzy" },
+  overdrive:{ name: "Overdrive",    desc: "Idle income ×4 for 25s",      dur: 25,  cd: 120, icon: "overdrive" },
+  goldrush: { name: "Gold Rush",    desc: "Rains 6 Golden Snaps",        dur: 0,   cd: 150, icon: "goldrush" },
+  cloutbomb:{ name: "Clout Bomb",   desc: "Instantly grants 90s of income", dur: 0, cd: 180, icon: "cloutbomb" },
+  blackout: { name: "Blackout",     desc: "ALL income ×10 for 8s",       dur: 8,   cd: 300, icon: "blackout" },
 };
 
 /* The crew. baseCps & tapBonus get multiplied by rarity.mult and level. */
@@ -126,9 +126,9 @@ const ROSTER_BY_RARITY = RARITY_ORDER.reduce((m,r)=>{ m[r]=ROSTER.filter(c=>c.ra
    GACHA: currencies, banners, pity
    ============================================================ */
 const CURRENCY = {
-  clout: { name: "Clout",      icon: "💠" },
-  gems:  { name: "Snaps",      icon: "💎" },
-  stars: { name: "Star Snaps", icon: "⭐" },
+  clout: { name: "Clout",      icon: "clout" },
+  gems:  { name: "Snaps",      icon: "snap" },
+  stars: { name: "Star Snaps", icon: "star" },
 };
 
 const PITY_LEGENDARY = 100;   // guaranteed banner-top rarity within this many pulls

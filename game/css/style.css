@@ -108,8 +108,9 @@ small{ font-weight:600; }
 @keyframes particle-fly{ 0%{opacity:1; transform:translate(-50%,-50%);} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)));} }
 
 /* golden snap */
-.gold-snap{ position:fixed; z-index:55; font-size:42px; cursor:pointer; pointer-events:auto;
-  filter:drop-shadow(0 0 10px var(--gold)); animation:gold-glow 1s ease-in-out infinite; }
+.gold-snap{ position:fixed; z-index:55; width:78px; cursor:pointer; pointer-events:auto;
+  filter:drop-shadow(0 0 12px var(--gold)); animation:gold-glow 1s ease-in-out infinite; }
+.gold-snap img{ width:100%; height:auto; display:block; pointer-events:none; }
 @keyframes gold-glow{ 0%,100%{filter:drop-shadow(0 0 8px var(--gold));} 50%{filter:drop-shadow(0 0 20px #fff);} }
 
 /* ---------------- SQUAD ---------------- */
@@ -322,24 +323,29 @@ body.sshaking{ animation:sshake .5s ease; }
 
 /* ---------------- SUMMON overlay / animation ---------------- */
 .summon-overlay{ flex-direction:column; gap:16px; background:rgba(4,6,12,.92); }
-.summon-charge{ position:relative; width:min(70vw,300px); height:min(70vw,300px);
-  display:flex; align-items:center; justify-content:center; }
+.summon-charge{ position:absolute; inset:0; z-index:1; }
 .summon-charge.done{ display:none; }
-.charge-core{ position:relative; z-index:2; font-size:92px; filter:drop-shadow(0 0 26px var(--accent)); }
-.charge-ring{ position:absolute; inset:20%; z-index:1; border-radius:50%; border:3px solid var(--accent); opacity:.55; }
-.charge-rays{ position:absolute; inset:-8%; z-index:0; border-radius:50%;
-  background:conic-gradient(from 0deg, transparent, var(--accent), transparent, var(--accent), transparent);
-  opacity:.28; filter:blur(2px); }
-.summon-charge.charging .charge-rays{ animation:spin 3s linear infinite; }
-.summon-charge.charging .charge-core{ animation:chargePulse 1.1s ease-in-out infinite; }
-.summon-charge.charging .charge-ring{ animation:ringPulse 1.1s ease-in-out infinite; }
-.summon-charge.peak .charge-core{ animation:chargePulse .32s ease-in-out infinite; }
-.summon-charge.peak .charge-rays{ animation:spin .8s linear infinite; opacity:.55; }
-.summon-charge.peak .charge-ring{ animation:ringPulse .32s ease-in-out infinite; }
-.summon-charge.burst{ animation:chargeBurst .42s ease-out forwards; }
-@keyframes chargePulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.13); } }
-@keyframes ringPulse{ 0%,100%{ transform:scale(1); opacity:.5; } 50%{ transform:scale(1.2); opacity:.95; } }
-@keyframes chargeBurst{ 0%{ transform:scale(1); opacity:1; } 55%{ transform:scale(1.7); opacity:1; } 100%{ transform:scale(2.6); opacity:0; } }
+.charge-arena{ position:absolute; inset:0; overflow:hidden; }
+.summon-mascot{ position:absolute; left:50%; top:50%; width:min(36vw,158px);
+  transform:translate(-50%,-50%);
+  transition:left .3s cubic-bezier(.34,1.56,.64,1), top .3s cubic-bezier(.34,1.56,.64,1);
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.55)); }
+.summon-mascot.hop{ animation:mascotHop .32s ease; }
+@keyframes mascotHop{
+  0%{ transform:translate(-50%,-50%) scale(1,1) rotate(0); }
+  30%{ transform:translate(-50%,-66%) scale(.86,1.18) rotate(-7deg); }
+  62%{ transform:translate(-50%,-42%) scale(1.14,.86) rotate(6deg); }
+  100%{ transform:translate(-50%,-50%) scale(1,1) rotate(0); }
+}
+.summon-charge.peak .summon-mascot{ filter:drop-shadow(0 10px 24px var(--accent)); }
+.summon-mascot.pop-out{ animation:mascotPop .42s ease-out forwards; }
+@keyframes mascotPop{ 0%{ transform:translate(-50%,-50%) scale(1); opacity:1; }
+  100%{ transform:translate(-50%,-72%) scale(1.9); opacity:0; } }
+.charge-word{ position:absolute; left:0; right:0; bottom:15%; text-align:center; z-index:2;
+  font-weight:900; font-size:22px; letter-spacing:6px; color:var(--accent);
+  text-shadow:0 0 18px var(--accent); animation:wordPulse 1s ease-in-out infinite; }
+.summon-charge.peak .charge-word{ animation-duration:.4s; }
+@keyframes wordPulse{ 0%,100%{ opacity:.65; letter-spacing:6px; } 50%{ opacity:1; letter-spacing:9px; } }
 
 .summon-flash{ position:fixed; inset:0; z-index:54; pointer-events:none; animation:flashOut .65s ease-out forwards; }
 @keyframes flashOut{ 0%{ opacity:0; } 12%{ opacity:1; } 100%{ opacity:0; } }
@@ -409,6 +415,77 @@ body.sshaking{ animation:sshake .5s ease; }
   color:var(--green); font-size:8px; font-weight:900; padding:2px 6px; border-radius:6px; }
 .wish-name{ font-weight:800; font-size:12px; margin-top:5px; line-height:1.12; }
 .wish-rar{ font-size:10px; font-weight:800; }
+
+/* ============================================================
+   custom icon set — sizing & colors (replaces all emojis)
+   ============================================================ */
+.ic{ width:1em; height:1em; display:inline-block; vertical-align:-.14em; flex:none; }
+.ic-clout{ color:#8ec5ff; } .ic-snap{ color:#5bd1ff; } .ic-star{ color:#ffd95e; }
+.ic-fire{ color:#ff7a3c; } .ic-heart{ color:#ff5d84; } .ic-trophy{ color:var(--gold); }
+
+/* HUD currency chips */
+.hud-pill .cur-ic{ display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.hud-pill .cur-ic .ic{ width:13px; height:13px; }
+.hud-pill.gem .cur-ic{ color:#5bd1ff; } .hud-pill.star .cur-ic{ color:#ffd95e; }
+
+/* bottom nav */
+#bottom-nav button span{ font-size:0; filter:none; }
+#bottom-nav button span .ic{ width:23px; height:23px; }
+
+/* summon / gacha chrome */
+.btn-cur{ display:inline-flex; vertical-align:-.1em; }
+.big-btn .btn-cur .ic{ width:17px; height:17px; }
+.banner-tab small{ display:flex; align-items:center; gap:4px; }
+.banner-tab small .ic{ width:12px; height:12px; }
+.banner-timer{ display:inline-flex; align-items:center; gap:5px; }
+.banner-timer .ic{ width:12px; height:12px; }
+.feat-badge{ display:inline-flex; align-items:center; gap:4px; }
+.feat-badge .ic{ width:11px; height:11px; }
+.wishlist-btn .ic{ width:18px; height:18px; }
+.odd .ic-up{ width:12px; height:12px; vertical-align:-.05em; }
+.rv-feat{ display:inline-flex; align-items:center; gap:2px; }
+.rv-feat .ic{ width:9px; height:9px; }
+.rv-refund .ic{ width:11px; height:11px; color:var(--gold); }
+
+/* squad */
+.sq-actions .btn-up .ic{ width:13px; height:13px; }
+.btn-up.summon-only .ic{ width:15px; height:15px; }
+.btn-feat .ic{ width:12px; height:12px; }
+.sq-portrait .lock{ font-size:0; color:var(--muted); }
+.sq-portrait .lock .ic{ width:22px; height:22px; }
+
+/* boosts */
+.boost-icon .ic{ width:30px; height:30px; }
+.boost-chip{ display:inline-flex; align-items:center; gap:5px; }
+.boost-chip .ic{ width:14px; height:14px; }
+
+/* daily / achievements / stats */
+.daily-streak{ display:flex; align-items:center; gap:6px; }
+.daily-streak .ic{ width:18px; height:18px; }
+.ach-ico{ display:flex; align-items:center; justify-content:center; width:24px; }
+.ach-ico .ic{ width:22px; height:22px; }
+.ach-ico .ic-lock{ color:var(--muted); }
+.ach-rew{ display:inline-flex; align-items:center; gap:3px; }
+.ach-rew .ic{ width:13px; height:13px; }
+.stat-row span .ic{ width:13px; height:13px; }
+
+/* wishlist / shop */
+.wish-check{ display:flex; align-items:center; justify-content:center; }
+.wish-check .ic{ width:14px; height:14px; color:#0b0f1a; }
+.x-btn{ display:inline-flex; align-items:center; justify-content:center; }
+.x-btn .ic{ width:15px; height:15px; }
+.shop-cones{ display:flex; justify-content:center; color:var(--gold); }
+.shop-cones .ic{ width:56px; height:56px; }
+.soon-card{ display:flex; align-items:center; justify-content:center; gap:6px; }
+.soon-card .ic{ width:18px; height:18px; }
+
+/* toast icons */
+#toast .ic{ width:14px; height:14px; vertical-align:-.15em; }
+
+/* prestige note / rebrand button */
+#rebrand-btn{ display:flex; align-items:center; justify-content:center; gap:6px; }
+#rebrand-btn .ic{ width:17px; height:17px; }
+#rebrand-note .ic{ width:12px; height:12px; }
 
 /* scrollbar */
 ::-webkit-scrollbar{ width:0; height:0; }

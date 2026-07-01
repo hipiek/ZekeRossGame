@@ -31,7 +31,8 @@ app (custom icon, fullscreen, offline play).
 | **Wishlist** | Pick up to 5 roll-only stars; off-featured top pulls are drawn from your wishlist first. |
 | **Low-rank refunds** | Rolling a Common/Rare refunds **half its recruit price** as Clout, so pulls are never wasted. |
 | **Boosts / abilities** | Owned members unlock active abilities (Tap Frenzy, Overdrive, Gold Rush, Clout Bomb, Blackout) on cooldowns. |
-| **Golden Snaps** | Ghosts drift across the screen — tap them for Clout bursts, frenzies, Snaps, or rare Star Snaps. |
+| **Golden Cat** | A golden cat drifts across the screen — tap it for Clout bursts, frenzies, Snaps, or rare Star Snaps. |
+| **Custom art & icons** | Fully emoji-free: a hand-built inline-SVG icon set (`js/icons.js`), plus custom mascots — the golden cat collectible and the summoner who bounces around the screen while you pull. |
 | **Daily rewards** | Login streak rewards (Snaps, plus a Star Snap every 7th day). |
 | **Rebrand (prestige)** | Reset for a permanent **Influence** multiplier (+3 ⭐) once you hit 1B total Clout. |
 | **Shop** | Clout Shop screen (under construction — bundles, Star packs, boosts & cosmetics coming). |

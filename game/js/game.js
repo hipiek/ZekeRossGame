@@ -256,16 +256,16 @@ function renderSquad(){
     const rollOnly = !r.buy;
     let actionBtn;
     if(st.owned){
-      actionBtn = `<button class="btn-up ${affordable?'':'cant'}" data-up="${c.id}">Upgrade · ${fmt(cost)} 💠</button>`;
+      actionBtn = `<button class="btn-up ${affordable?'':'cant'}" data-up="${c.id}">Upgrade · ${fmt(cost)} ${ic('clout')}</button>`;
     } else if(rollOnly){
-      actionBtn = `<button class="btn-up summon-only" data-goto-summon="1">✦ Summon only</button>`;
+      actionBtn = `<button class="btn-up summon-only" data-goto-summon="1">${ic('summon')} Summon only</button>`;
     } else {
-      actionBtn = `<button class="btn-up ${affordable?'':'cant'}" data-up="${c.id}">Recruit · ${fmt(cost)} 💠</button>`;
+      actionBtn = `<button class="btn-up ${affordable?'':'cant'}" data-up="${c.id}">Recruit · ${fmt(cost)} ${ic('clout')}</button>`;
     }
     card.innerHTML = `
       <div class="sq-portrait" style="--ring:${r.ring}">
         <img src="${imgFor(c.id)}" loading="lazy" alt="${c.name}">
-        ${st.owned?`<span class="lvl">Lv ${st.level}</span>`:`<span class="lock">${rollOnly?'✦':'🔒'}</span>`}
+        ${st.owned?`<span class="lvl">Lv ${st.level}</span>`:`<span class="lock">${rollOnly?ic('summon'):ic('lock')}</span>`}
       </div>
       <div class="sq-info">
         <div class="sq-top">
@@ -277,7 +277,7 @@ function renderSquad(){
             : (rollOnly?`Pull on the Summon banner to unlock`:`Recruit to reveal`)}</div>
         <div class="sq-actions">
           ${actionBtn}
-          ${st.owned?`<button class="btn-feat ${isFeatured?'on':''}" data-feat="${c.id}">${isFeatured?'★ Featured':'Feature'}</button>`:``}
+          ${st.owned?`<button class="btn-feat ${isFeatured?'on':''}" data-feat="${c.id}">${isFeatured?ic('star')+' Featured':'Feature'}</button>`:``}
         </div>
       </div>`;
     wrap.appendChild(card);
@@ -373,7 +373,7 @@ function summon(n){
   const cost = n===1 ? banner.costSingle : banner.costTen;
   const cur = banner.currency;
   if(curHave(cur) < cost){
-    toast(`Not enough ${CURRENCY[cur].name} ${CURRENCY[cur].icon}`);
+    toast(`Not enough ${CURRENCY[cur].name} ${ic(CURRENCY[cur].icon)}`);
     return;
   }
   curSpend(cur, cost);
@@ -403,7 +403,7 @@ function renderSummon(){
     const t = el("button","banner-tab"+(b.id===S.activeBanner?" on":""));
     t.dataset.banner = b.id;
     t.style.setProperty("--accent", b.accent);
-    t.innerHTML = `<span>${b.name}</span><small>${CURRENCY[b.currency].icon} ${CURRENCY[b.currency].name}</small>`;
+    t.innerHTML = `<span>${b.name}</span><small>${ic(CURRENCY[b.currency].icon)} ${CURRENCY[b.currency].name}</small>`;
     tabs.appendChild(t);
   });
 
@@ -414,7 +414,7 @@ function renderSummon(){
     <div class="feat-rays"></div>
     <div class="feat-glow"></div>
     <img class="feat-img" src="${imgFor(feat.id)}" alt="${feat.name}">
-    <div class="feat-badge" style="background:${r.ring}">★ FEATURED ${r.name.toUpperCase()}</div>
+    <div class="feat-badge" style="background:${r.ring}">${ic('star')} FEATURED ${r.name.toUpperCase()}</div>
     <div class="feat-meta">
       <div class="feat-name" style="color:${r.ring}">${feat.name}</div>
       <div class="feat-quote">“${feat.quote}”</div>
@@ -423,7 +423,7 @@ function renderSummon(){
   // banner title + countdown
   $("#banner-name").textContent = banner.name;
   $("#banner-tagline").textContent = banner.tagline;
-  $("#banner-timer").textContent = "⏳ "+bannerCountdown(banner);
+  $("#banner-timer").innerHTML = ic('hourglass')+" "+bannerCountdown(banner);
 
   // pity meter
   const toGuarantee = Math.max(0, PITY_LEGENDARY - gs.pity);
@@ -435,11 +435,11 @@ function renderSummon(){
   $("#fifty-state").className = "fifty "+(gs.guaranteedFeatured?"guaranteed":"");
 
   // buttons w/ cost + currency
-  const icon = CURRENCY[banner.currency].icon;
+  const curIcon = ic(CURRENCY[banner.currency].icon);
   $("#single-cost").textContent = banner.costSingle;
   $("#ten-cost").textContent = banner.costTen;
-  $("#single-cur").textContent = icon;
-  $("#ten-cur").textContent = icon;
+  $("#single-cur").innerHTML = curIcon;
+  $("#ten-cur").innerHTML = curIcon;
   const have = curHave(banner.currency);
   $("#pull-1").classList.toggle("cant", have < banner.costSingle);
   $("#pull-10").classList.toggle("cant", have < banner.costTen);
@@ -454,7 +454,7 @@ function renderSummon(){
     const rr=RARITY[k];
     const isTop = k===banner.topRarity;
     odds.appendChild(el("div","odd"+(isTop?" up":""),
-      `<span style='color:${rr.ring}'>${rr.name}${isTop?' ▲':''}</span><span>${(rr.weight/total*100).toFixed(1)}%</span>`));
+      `<span style='color:${rr.ring}'>${rr.name}${isTop?' '+ic('up'):''}</span><span>${(rr.weight/total*100).toFixed(1)}%</span>`));
   });
 }
 
@@ -489,19 +489,23 @@ function playSummon(results, banner){
   ov.style.setProperty("--accent", accent);
 
   const charge = $("#summon-charge");
-  charge.className = "summon-charge rar-"+best;
-  void charge.offsetWidth;
-  charge.classList.add("charging");
+  charge.className = "summon-charge rar-"+best+" charging";
+  const mascot = $("#summon-mascot");
+  mascot.classList.remove("pop-out");
   $("#summon-cards").innerHTML = "";
   $("#summon-cards").classList.remove("show");
   $("#summon-skip").classList.add("show");
   $("#summon-continue").classList.remove("show");
 
-  const chargeMs = best==="mythic"?2200 : best==="legendary"?1900 : best==="epic"?1500 : 1050;
-  sTimeout(()=>charge.classList.add("peak"), chargeMs*0.45);
-  sTimeout(()=>{ haptic(20); }, chargeMs*0.7);
+  const chargeMs = best==="mythic"?2400 : best==="legendary"?2000 : best==="epic"?1500 : 1050;
+  // the summoner bounces excitedly around the screen, hopping faster near the end
+  hopMascot();
+  let t = 260;
+  while(t < chargeMs - 140){ sTimeout(hopMascot, t); t += (t > chargeMs*0.6 ? 190 : 300); }
+  sTimeout(()=>charge.classList.add("peak"), chargeMs*0.55);
   sTimeout(()=>{
     charge.classList.add("burst");
+    mascot.classList.add("pop-out");
     flashScreen(accent);
     screenShake(best==="mythic"?16:best==="legendary"?12:7);
     haptic(best==="mythic"||best==="legendary"?90:40);
@@ -510,6 +514,15 @@ function playSummon(results, banner){
     charge.classList.add("done");
     revealCards(results, banner, false);
   }, chargeMs+420);
+}
+
+/* the summoner mascot hops to a new spot with a squash-and-stretch bounce */
+function hopMascot(){
+  const m = $("#summon-mascot"); if(!m) return;
+  m.style.left = (14 + Math.random()*72) + "%";
+  m.style.top  = (22 + Math.random()*50) + "%";
+  m.classList.remove("hop"); void m.offsetWidth; m.classList.add("hop");
+  if(S.settings.haptics) haptic(6);
 }
 
 function revealCards(results, banner, instant){
@@ -524,8 +537,8 @@ function revealCards(results, banner, instant){
     const card = el("div","reveal-card rar-"+res.c.rarity+(top?" cinematic":""));
     const delay = instant?0 : 0.12 + i*0.14;
     card.style.setProperty("--d", delay+"s");
-    const featTag = res.c.id===banner.featured ? `<span class="rv-feat">★ FEATURED</span>` : "";
-    const refundTag = res.refund>0 ? `<span class="rv-refund">+${fmt(res.refund)} 💠</span>` : "";
+    const featTag = res.c.id===banner.featured ? `<span class="rv-feat">${ic('star')} FEATURED</span>` : "";
+    const refundTag = res.refund>0 ? `<span class="rv-refund">+${fmt(res.refund)} ${ic('clout')}</span>` : "";
     card.innerHTML = `
       <div class="rv-inner">
         <div class="rv-back"><span>?</span></div>
@@ -582,7 +595,7 @@ function renderWishlist(){
     card.innerHTML = `
       <div class="wish-port" style="--ring:${r.ring}">
         <img src="${imgFor(c.id)}" loading="lazy" alt="${c.name}">
-        ${on?'<span class="wish-check">✓</span>':''}
+        ${on?`<span class="wish-check">${ic('check')}</span>`:''}
         ${owned?'<span class="wish-owned">OWNED</span>':''}
       </div>
       <div class="wish-name">${c.name}</div>
@@ -626,7 +639,7 @@ function triggerAbility(type){
   if(type==="blackout")  S.activeBoosts.push({type, until:now+A.dur*1000, mult:10, kind:"all"});
   if(type==="goldrush"){ for(let i=0;i<6;i++) setTimeout(spawnGold, i*350); }
   if(type==="cloutbomb"){ const amt = cps()*90; S.clout+=amt; S.stats.totalClout+=amt; floatText(window.innerWidth/2, window.innerHeight*0.4, "+"+fmt(amt), "crit"); }
-  toast(A.icon+" "+A.name+"!", "#ffb23e");
+  toast(ic(A.icon)+" "+A.name+"!", "#ffb23e");
   haptic(50);
   renderBoosts(); renderHUD();
   save();
@@ -643,7 +656,7 @@ function renderBoosts(){
     const pct = cd>0 ? (1 - cd/A.cd)*100 : 100;
     const card = el("div","boost-card"+(cd>0?" cooling":""));
     card.innerHTML = `
-      <div class="boost-icon">${A.icon}</div>
+      <div class="boost-icon">${ic(A.icon)}</div>
       <div class="boost-meta">
         <div class="boost-name">${A.name}</div>
         <div class="boost-desc">${A.desc}</div>
@@ -654,9 +667,9 @@ function renderBoosts(){
   });
   const chips = $("#active-boosts"); chips.innerHTML="";
   S.activeBoosts.forEach(b=>{
-    const A=ABILITIES[b.type]||{icon:"⏱",name:b.type};
+    const A=ABILITIES[b.type]||{icon:"timer",name:b.type};
     const left=Math.max(0,(b.until-now)/1000);
-    chips.appendChild(el("div","boost-chip",`${A.icon} ${A.name} ${left.toFixed(0)}s`));
+    chips.appendChild(el("div","boost-chip",`${ic(A.icon)} ${A.name} ${left.toFixed(0)}s`));
   });
 }
 
@@ -665,7 +678,7 @@ function renderBoosts(){
    ============================================================ */
 let goldTimer = 0;
 function spawnGold(){
-  const g = el("div","gold-snap","👻");
+  const g = el("div","gold-snap",`<img src="assets/fx/cookiecat.webp" alt="Golden Cat">`);
   g.style.top = (20 + Math.random()*60)+"vh";
   g.style.left = "-12vw";
   $("#fx-layer").appendChild(g);
@@ -696,9 +709,9 @@ function catchGold(x,y){
     floatText(x,y,"×7 FRENZY 15s","gold");
   } else if(roll < 0.93){
     const g = 1+Math.floor(Math.random()*3);
-    S.gems += g; floatText(x,y,"+"+g+" 💎","gold");
+    S.gems += g; floatText(x,y,"+"+g+" "+ic('snap'),"gold");
   } else {
-    S.stars += 1; floatText(x,y,"+1 ⭐ Star Snap","star");
+    S.stars += 1; floatText(x,y,"+1 "+ic('star')+" Star Snap","star");
   }
   burstParticles(x,y,"#ffd166",24);
   haptic(45);
@@ -715,14 +728,14 @@ function renderPrestige(){
   $("#infl-pending").textContent = "+"+fmt(pend);
   $("#infl-bonus").textContent = "×"+(1+(S.influence+pend)*0.02).toFixed(2);
   $("#rebrand-btn").disabled = pend<=0;
-  $("#rebrand-note").textContent = pend<=0
+  $("#rebrand-note").innerHTML = pend<=0
     ? "Reach 1B total Clout to Rebrand."
-    : `Rebranding resets Clout & squad levels but grants permanent income + 3 ⭐.`;
+    : `Rebranding resets Clout &amp; squad levels but grants permanent income + 3 ${ic('star')}.`;
 }
 function rebrand(){
   const pend = pendingInfluence();
   if(pend<=0) return;
-  if(!confirm(`Rebrand for +${fmt(pend)} Influence? Your Clout and squad levels reset, but you keep Snaps, Star Snaps, achievements, and gain a permanent ×${(1+(S.influence+pend)*0.02).toFixed(2)} multiplier (and +3 ⭐).`)) return;
+  if(!confirm(`Rebrand for +${fmt(pend)} Influence? Your Clout and squad levels reset, but you keep Snaps, Star Snaps, achievements, and gain a permanent x${(1+(S.influence+pend)*0.02).toFixed(2)} multiplier (and +3 Star Snaps).`)) return;
   S.influence += pend;
   S.stats.rebrands++;
   S.stars += 3;
@@ -734,7 +747,7 @@ function rebrand(){
   S.squad = squad;
   S.featured = "closer";
   combo=0;
-  toast("Rebranded! New era begins ✨","#b06bff");
+  toast("Rebranded! New era begins "+ic('summon'),"#b06bff");
   checkAchievements();
   save();
   renderAll();
@@ -749,7 +762,7 @@ function checkAchievements(){
     if(!S.achievements[a.id] && a.check(S)){
       S.achievements[a.id]=true;
       S.gems += a.gems; gained += a.gems;
-      toast(`🏆 ${a.name} (+${a.gems}💎)`, "#ffd166");
+      toast(`${ic('trophy')} ${a.name} (+${a.gems} ${ic('snap')})`, "#ffd166");
     }
   });
   if(gained){ renderHUD(); renderAchievements(); }
@@ -759,9 +772,9 @@ function renderAchievements(){
   ACHIEVEMENTS.forEach(a=>{
     const done=!!S.achievements[a.id];
     const c=el("div","ach-row"+(done?" done":""));
-    c.innerHTML=`<div class="ach-ico">${done?"🏆":"🔒"}</div>
+    c.innerHTML=`<div class="ach-ico">${done?ic('trophy'):ic('lock')}</div>
       <div class="ach-txt"><b>${a.name}</b><span>${a.desc}</span></div>
-      <div class="ach-rew">+${a.gems}💎</div>`;
+      <div class="ach-rew">+${a.gems} ${ic('snap')}</div>`;
     wrap.appendChild(c);
   });
 }
@@ -783,7 +796,7 @@ function claimDaily(){
   const rw = dailyReward();
   S.gems += rw.gems; S.stars += rw.stars;
   S.daily.claimedToday = true;
-  toast(`Day ${S.daily.streak}: +${rw.gems}💎${rw.stars?` +${rw.stars}⭐`:""}`, "#ffd166");
+  toast(`Day ${S.daily.streak}: +${rw.gems} ${ic('snap')}${rw.stars?` +${rw.stars} ${ic('star')}`:""}`, "#ffd166");
   checkAchievements();
   renderHUD(); renderDaily(); save();
 }
@@ -791,9 +804,9 @@ function renderDaily(){
   const box=$("#daily-box"); if(!box) return;
   const rw=dailyReward();
   box.innerHTML = `
-    <div class="daily-streak">🔥 ${S.daily.streak}-day streak</div>
+    <div class="daily-streak">${ic('fire')} ${S.daily.streak}-day streak</div>
     <button id="daily-claim" class="big-btn ${S.daily.claimedToday?'cant':''}">
-      ${S.daily.claimedToday?"Come back tomorrow":`Claim +${rw.gems} 💎${rw.stars?` +${rw.stars} ⭐`:""}`}
+      ${S.daily.claimedToday?"Come back tomorrow":`Claim +${rw.gems} ${ic('snap')}${rw.stars?` +${rw.stars} ${ic('star')}`:""}`}
     </button>`;
   const b=$("#daily-claim"); if(b) b.onclick=claimDaily;
 }
@@ -814,8 +827,8 @@ function renderStats(){
     ["Squad recruited", ownedCount(S)+"/"+ROSTER.length],
     ["Influence", fmt(S.influence)+" (×"+influenceMult().toFixed(2)+")"],
     ["Rebrands", S.stats.rebrands],
-    ["Snaps 💎", fmt(S.gems)],
-    ["Star Snaps ⭐", fmt(S.stars)],
+    [`Snaps ${ic('snap')}`, fmt(S.gems)],
+    [`Star Snaps ${ic('star')}`, fmt(S.stars)],
   ];
   wrap.innerHTML = rows.map(r=>`<div class="stat-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("");
   renderAchievements();
@@ -827,7 +840,7 @@ function renderStats(){
 let toastTimer=null;
 function toast(msg, color){
   const t=$("#toast");
-  t.textContent=msg;
+  t.innerHTML=msg;
   t.style.borderColor = color||"#3da9fc";
   t.classList.add("show");
   clearTimeout(toastTimer);
@@ -878,7 +891,7 @@ function tick(){
   renderHUD();
   if($("#screen-tap").classList.contains("active")) $("#tap-power").textContent = fmt(tapBase()*tapMult()*comboMult());
   if($("#screen-boosts").classList.contains("active")) renderBoosts();
-  if($("#screen-summon").classList.contains("active")) $("#banner-timer").textContent = "⏳ "+bannerCountdown(activeBanner());
+  if($("#screen-summon").classList.contains("active")) $("#banner-timer").innerHTML = ic('hourglass')+" "+bannerCountdown(activeBanner());
 
   if(Math.random()<0.02) checkAchievements();
 }
@@ -972,6 +985,7 @@ function boot(){
   bindEvents();
   $("#opt-sfx").checked = S.settings.sfx;
   $("#opt-haptics").checked = S.settings.haptics;
+  fillIcons();
   renderAll();
   showScreen("tap");
   checkAchievements();
