@@ -5,7 +5,7 @@
 'use strict';
 
 const SAVE_KEY = "snapsquad.save.v1";
-const GAME_VERSION = "1.3.0";   // shown in Settings; keep in sync with package.json
+const GAME_VERSION = "2.0.0";   // shown in Settings; keep in sync with package.json
 const TICK_MS = 100;            // simulation tick
 const COMBO_WINDOW = 900;       // ms to keep a combo alive
 const COMBO_MAX = 30;           // max combo multiplier contribution
@@ -45,11 +45,13 @@ function freshState(){
   ROSTER.forEach(c => squad[c.id] = { owned:false, level:0 });
   squad.closer.owned = true; squad.closer.level = 1; // free starter
   return {
-    clout: 0,
+    clout: 0,              // "Coins" — farm cash
     gems: 5,
     stars: 0,
     featured: "closer",
     squad,
+    pop: 8,                // chickens on the farm
+    upg: { hab:0, feed:0, hatch:0 }, // habitat capacity / feed value / hatchery speed
     influence: 0,          // permanent prestige multiplier source
     abilityReady: {},      // id -> timestamp when ready
     activeBoosts: [],      // {type,until,mult,kind}
@@ -92,57 +94,78 @@ function load(){
     BANNERS.forEach(b => { if(!S.bannerEnds[b.id]) S.bannerEnds[b.id] = Date.now()+b.durationDays*86400000; });
     if(typeof S.stats.totalPulls !== "number") S.stats.totalPulls = 0;
     if(!S.shop || typeof S.shop.day !== "number") S.shop = { day:0, bought:{} };
+    if(typeof S.pop !== "number") S.pop = 8;
+    if(!S.upg) S.upg = { hab:0, feed:0, hatch:0 };
     return true;
   } catch(e){ return false; }
 }
 
-/* ---------------- derived numbers ---------------- */
-function influenceMult(){ return 1 + S.influence * 0.02; } // +2% per influence point
+/* ============================================================
+   FARM ECONOMY (Egg Inc-style): population, capacity, upgrades,
+   manager multipliers. Cash is stored in S.clout ("Coins").
+   ============================================================ */
+function influenceMult(){ return 1 + S.influence * 0.02; } // permanent prestige bonus
 
-function levelCps(c, lvl){ return c.baseCps * RARITY[c.rarity].mult * lvl; }
-function memberCps(id){
-  const st = S.squad[id]; if(!st.owned) return 0;
-  return levelCps(ROSTER_BY_ID[id], st.level);
-}
-function baseCps(){
+function capacity(){ return Math.floor(40 * Math.pow(2.15, S.upg.hab)); }
+function eggValue(){ return 0.05 * Math.pow(1.6, S.upg.feed); }     // coins / chicken / sec
+function hatchRate(){ return 0.6 * Math.pow(1.5, S.upg.hatch); }     // auto chickens / sec
+
+/* collection bonus from every owned manager; the featured one counts extra */
+function collectionMult(){
   let sum = 0;
-  for(const id in S.squad) sum += memberCps(id);
-  return sum;
+  for(const id in S.squad){
+    const st = S.squad[id];
+    if(st.owned) sum += RARITY[ROSTER_BY_ID[id].rarity].mult * st.level;
+  }
+  return 1 + sum * 0.02;
 }
+function featuredBonus(){
+  const st = S.squad[S.featured]; if(!st || !st.owned) return 1;
+  return 1 + RARITY[ROSTER_BY_ID[S.featured].rarity].mult * st.level * 0.06;
+}
+function farmMult(){ return collectionMult() * featuredBonus(); }
+
 function idleMult(){
   let m = influenceMult();
   for(const b of S.activeBoosts){ if(b.kind==="idle" || b.kind==="all") m *= b.mult; }
   return m;
 }
-function cps(){ return baseCps() * idleMult(); }
+/* coins per second produced by the flock */
+function cps(){ return S.pop * eggValue() * farmMult() * idleMult(); }
 
-function tapBase(){
-  let sum = 1;
-  for(const id in S.squad){
-    const st = S.squad[id];
-    if(st.owned){ sum += ROSTER_BY_ID[id].tapBonus * RARITY[ROSTER_BY_ID[id].rarity].mult * (1 + (st.level-1)*0.5); }
-  }
-  sum += baseCps() * 0.15; // tapping benefits a little from your empire
-  return sum * influenceMult();
-}
-function tapMult(){
-  let m = 1;
-  for(const b of S.activeBoosts){ if(b.kind==="tap" || b.kind==="all") m *= b.mult; }
-  return m;
-}
+/* ---- upgrade costs (steep = slow, deliberate progression) ---- */
+function habCost(){   return Math.ceil(120  * Math.pow(9, S.upg.hab)); }
+function feedCost(){  return Math.ceil(90   * Math.pow(8, S.upg.feed)); }
+function hatchCost(){ return Math.ceil(200  * Math.pow(7, S.upg.hatch)); }
 
-function upgradeCost(c, lvl){ return Math.ceil(c.baseCost * Math.pow(1.16, lvl)); }
+/* ---- manager recruit / level costs (rescaled for the farm economy) ---- */
+function recruitBase(c){ return Math.ceil((RARITY[c.rarity].mult * 120 + 60)); }
+function upgradeCost(c, lvl){ return Math.ceil(recruitBase(c) * Math.pow(1.7, lvl)); }
+
+/* ---- egg tier (milestone ladder from lifetime coins) ---- */
+function eggTierIndex(){
+  let idx = 0;
+  for(let i=0;i<EGG_TIERS.length;i++){ if(S.stats.totalClout >= EGG_TIERS[i].at) idx = i; }
+  return idx;
+}
+function eggTier(){ return EGG_TIERS[eggTierIndex()]; }
+function mythicUnlocked(){ return EGG_TIERS[eggTierIndex()].name === "Legendary" || EGG_TIERS[eggTierIndex()].name === "Mythic"; }
 
 /* influence you'd gain by rebranding now */
 function pendingInfluence(){
   const tc = S.stats.totalClout;
-  if(tc < 1e9) return 0;
-  return Math.floor(Math.pow(tc / 1e9, 0.45));
+  if(tc < 1e7) return 0;
+  return Math.floor(Math.pow(tc / 1e7, 0.5));
 }
 
-/* ---------------- combo ---------------- */
-let combo = 0, comboExpire = 0;
-function comboMult(){ return 1 + Math.min(combo, COMBO_MAX) * 0.15; }
+/* ---------------- hatching ---------------- */
+function hatch(n){
+  const cap = capacity();
+  if(S.pop >= cap){ toast("Habitat full — upgrade Habitat"); return false; }
+  S.pop = Math.min(cap, S.pop + n);
+  if(window.World) World.setPopulation(S.pop);
+  return true;
+}
 
 /* ============================================================
    RENDERING helpers
@@ -174,7 +197,7 @@ function burstParticles(x, y, color, n){
 function haptic(ms){ if(S.settings.haptics && navigator.vibrate) navigator.vibrate(ms); }
 function shake(intensity){
   if(!S.settings.sfx) return;
-  const s = $("#hero-stage");
+  const s = $("#hero-stage"); if(!s) return;
   s.style.setProperty("--shake", intensity+"px");
   s.classList.remove("shaking"); void s.offsetWidth; s.classList.add("shaking");
 }
@@ -193,55 +216,67 @@ function renderHUD(){
   $("#gem-amt").textContent = fmt(S.gems);
   $("#star-amt").textContent = fmt(S.stars);
   $("#infl-amt").textContent = "×"+influenceMult().toFixed(2);
-}
-
-/* ---------- TAP screen ---------- */
-function renderTapScreen(){
+  // manager face (top-left, Egg-Inc style) + egg tier
   const c = ROSTER_BY_ID[S.featured];
-  const stage = $("#hero-stage");
-  if(stage.dataset.cur !== S.featured){
-    stage.dataset.cur = S.featured;
-    $("#hero-img").src = imgFor(S.featured);
-    $("#hero-img").style.boxShadow = `0 0 0 6px ${RARITY[c.rarity].ring}, 0 18px 50px rgba(0,0,0,.6)`;
-    $("#hero-name").textContent = c.name;
-    $("#hero-name").style.color = RARITY[c.rarity].ring;
-    $("#hero-rarity").textContent = RARITY[c.rarity].name.toUpperCase();
-    $("#hero-rarity").style.background = RARITY[c.rarity].ring;
-    $("#hero-quote").textContent = "“"+c.quote+"”";
+  const face = $("#mgr-face");
+  if(face && face.dataset.cur !== S.featured){
+    face.dataset.cur = S.featured;
+    face.style.setProperty("--ring", RARITY[c.rarity].ring);
+    $("#mgr-face-img").src = imgFor(S.featured);
   }
-  $("#tap-power").textContent = fmt(tapBase()*tapMult()*comboMult());
+  const tierEl = $("#egg-tier"); if(tierEl) tierEl.textContent = eggTier().name;
 }
 
-function updateComboUI(){
-  const bar = $("#combo-wrap");
-  if(combo > 1){
-    bar.classList.add("show");
-    $("#combo-mult").textContent = comboMult().toFixed(2)+"×";
-    $("#combo-count").textContent = combo+" combo";
-    $("#combo-fill").style.width = (Math.min(combo, COMBO_MAX)/COMBO_MAX*100)+"%";
-  } else bar.classList.remove("show");
+/* ---------- FARM screen ---------- */
+function renderFarm(){
+  const c = ROSTER_BY_ID[S.featured];
+  const r = RARITY[c.rarity];
+  const cap = capacity();
+  $("#farm-pop").textContent = fmt(Math.floor(S.pop));
+  $("#farm-cap").textContent = fmt(cap);
+  $("#farm-fill").style.width = Math.min(100, S.pop/cap*100)+"%";
+  $("#farm-mgr-name").textContent = c.name;
+  $("#farm-mgr-name").style.color = r.ring;
+  $("#farm-cps").textContent = fmt(cps());
+
+  const rows = [
+    ["hab",  habCost(),   "Habitat", "Capacity → "+fmt(Math.floor(40*Math.pow(2.15,S.upg.hab+1)))],
+    ["feed", feedCost(),  "Feed",    "Egg value +60%"],
+    ["hatch",hatchCost(), "Hatchery","Hatch speed +50%"],
+  ];
+  rows.forEach(([key,cost,name,desc])=>{
+    const b = $("#upg-"+key); if(!b) return;
+    b.classList.toggle("cant", S.clout < cost);
+    b.querySelector(".upg-cost").innerHTML = fmt(cost)+" "+ic('clout');
+    b.querySelector(".upg-desc").textContent = desc;
+  });
+  const hb = $("#hatch-btn");
+  if(hb) hb.classList.toggle("full", S.pop>=cap);
+
+  // hatch button also shows manager face passively via HUD (renderHUD)
 }
 
-function doTap(clientX, clientY){
-  const now = Date.now();
-  if(now < comboExpire) combo++; else combo = 1;
-  comboExpire = now + COMBO_WINDOW;
-  if(combo > S.stats.bestCombo) S.stats.bestCombo = combo;
+/* tap the farm / hatch button -> add chickens */
+function doHatch(clientX, clientY){
+  const before = S.pop;
+  if(hatch(4)){
+    if(clientX!=null) floatText(clientX, clientY, "+"+fmt(S.pop-before), "");
+    haptic(12);
+    if(window.World) World.pulse();
+    renderFarm();
+  }
+}
 
-  let val = tapBase() * tapMult() * comboMult();
-  let crit = Math.random() < CRIT_CHANCE;
-  if(crit) val *= CRIT_MULT;
-
-  S.clout += val;
-  S.stats.totalClout += val;
-  S.stats.totalTaps++;
-
-  floatText(clientX, clientY, (crit?"CRIT! ":"+")+fmt(val), crit?"crit":"");
-  burstParticles(clientX, clientY, crit?"#ffd166":"#3da9fc", crit?14:6);
-  haptic(crit?28:10);
-  shake(crit?7:3);
-  $("#hero-img").classList.remove("pop"); void $("#hero-img").offsetWidth; $("#hero-img").classList.add("pop");
-  updateComboUI();
+function buyFarmUpgrade(key){
+  const cost = key==="hab"?habCost() : key==="feed"?feedCost() : hatchCost();
+  if(S.clout < cost){ toast("Not enough Coins"); return; }
+  S.clout -= cost;
+  S.upg[key]++;
+  toast((key==="hab"?"Habitat":key==="feed"?"Feed":"Hatchery")+" upgraded!", "#34d399");
+  haptic(30);
+  checkAchievements();
+  renderFarm(); renderHUD();
+  save();
 }
 
 /* ============================================================
@@ -276,7 +311,7 @@ function renderSquad(){
           <span class="sq-rar" style="background:${r.ring}">${r.name}</span>
         </div>
         <div class="sq-sub">${st.owned
-            ? `${fmt(memberCps(c.id))}/s · +${fmt(c.tapBonus*r.mult*(1+(st.level-1)*0.5))}/tap`
+            ? `Lv ${st.level} · +${fmt(r.mult*st.level)} farm boost${S.featured===c.id?' · ACTIVE':''}`
             : (rollOnly?`Pull on the Summon banner to unlock`:`Recruit to reveal`)}</div>
         <div class="sq-actions">
           ${actionBtn}
@@ -334,7 +369,7 @@ function applyPull(c){
   // low-rank pulls refund half the recruit price as Clout
   let refund = 0;
   if(RARITY[c.rarity].buy){
-    refund = Math.floor(c.baseCost * 0.5);
+    refund = Math.floor(recruitBase(c) * 0.5);
     S.clout += refund; S.stats.totalClout += refund;
   }
   return { c, kind, refund };
@@ -698,11 +733,12 @@ function triggerAbility(type){
   if(now < ready){ toast("On cooldown"); return; }
   const A = ABILITIES[type];
   S.abilityReady[type] = now + A.cd*1000;
-  if(type==="frenzy")    S.activeBoosts.push({type, until:now+A.dur*1000, mult:8, kind:"tap"});
+  if(type==="frenzy"){   hatch(capacity()); S.activeBoosts.push({type, until:now+A.dur*1000, mult:3, kind:"all"}); }
   if(type==="overdrive") S.activeBoosts.push({type, until:now+A.dur*1000, mult:4, kind:"idle"});
   if(type==="blackout")  S.activeBoosts.push({type, until:now+A.dur*1000, mult:10, kind:"all"});
   if(type==="goldrush"){ for(let i=0;i<6;i++) setTimeout(spawnGold, i*350); }
   if(type==="cloutbomb"){ const amt = cps()*90; S.clout+=amt; S.stats.totalClout+=amt; floatText(window.innerWidth/2, window.innerHeight*0.4, "+"+fmt(amt), "crit"); }
+  if(window.World) World.playAbility(type);
   toast(ic(A.icon)+" "+A.name+"!", "#ffb23e");
   haptic(50);
   renderBoosts(); renderHUD();
@@ -765,9 +801,9 @@ function catchGold(x,y){
   S.stats.goldCaught++;
   const roll = Math.random();
   if(roll < 0.45){
-    const amt = Math.max(cps()*60, tapBase()*120);
+    const amt = Math.max(cps()*90, 50);
     S.clout += amt; S.stats.totalClout+=amt;
-    floatText(x,y,"+"+fmt(amt)+" CLOUT","gold");
+    floatText(x,y,"+"+fmt(amt)+" COINS","gold");
   } else if(roll < 0.70){
     S.activeBoosts.push({type:"goldfrenzy", until:Date.now()+15000, mult:7, kind:"all"});
     floatText(x,y,"×7 FRENZY 15s","gold");
@@ -793,8 +829,8 @@ function renderPrestige(){
   $("#infl-bonus").textContent = "×"+(1+(S.influence+pend)*0.02).toFixed(2);
   $("#rebrand-btn").disabled = pend<=0;
   $("#rebrand-note").innerHTML = pend<=0
-    ? "Reach 1B total Clout to Rebrand."
-    : `Rebranding resets Clout &amp; squad levels but grants permanent income + 3 ${ic('star')}.`;
+    ? "Reach 10M lifetime Coins to Rebrand."
+    : `Rebranding resets your farm &amp; managers but grants a permanent multiplier + 3 ${ic('star')}.`;
 }
 function rebrand(){
   const pend = pendingInfluence();
@@ -805,12 +841,13 @@ function rebrand(){
   S.stars += 3;
   S.clout = 0; S.stats.totalClout = 0;
   S.activeBoosts = []; S.abilityReady = {};
+  S.pop = 8; S.upg = { hab:0, feed:0, hatch:0 };
   const squad = {};
   ROSTER.forEach(c => squad[c.id] = { owned:false, level:0 });
   squad.closer.owned=true; squad.closer.level=1;
   S.squad = squad;
   S.featured = "closer";
-  combo=0;
+  if(window.World) World.setPopulation(S.pop);
   toast("Rebranded! New era begins "+ic('summon'),"#b06bff");
   checkAchievements();
   save();
@@ -881,14 +918,14 @@ function renderDaily(){
 function renderStats(){
   const wrap=$("#stats-list"); if(!wrap) return;
   const rows = [
-    ["Total Clout earned", fmt(S.stats.totalClout)],
-    ["Clout / second", fmt(cps())],
-    ["Clout / tap", fmt(tapBase()*tapMult())],
-    ["Total taps", fmt(S.stats.totalTaps)],
-    ["Best combo", S.stats.bestCombo+"×"],
+    ["Lifetime Coins earned", fmt(S.stats.totalClout)],
+    ["Coins / second", fmt(cps())],
+    ["Egg tier", eggTier().name],
+    ["Chickens", fmt(Math.floor(S.pop))+" / "+fmt(capacity())],
+    ["Farm multiplier", "×"+farmMult().toFixed(2)],
     ["Total summons", fmt(S.stats.totalPulls||0)],
-    ["Golden Snaps caught", S.stats.goldCaught],
-    ["Squad recruited", ownedCount(S)+"/"+ROSTER.length],
+    ["Golden Cats caught", S.stats.goldCaught],
+    ["Managers recruited", ownedCount(S)+"/"+ROSTER.length],
     ["Influence", fmt(S.influence)+" (×"+influenceMult().toFixed(2)+")"],
     ["Rebrands", S.stats.rebrands],
     [`Snaps ${ic('snap')}`, fmt(S.gems)],
@@ -914,22 +951,24 @@ function toast(msg, color){
 /* ============================================================
    NAV / SCREENS
    ============================================================ */
-const SCREENS = ["tap","squad","summon","boosts","shop","stats"];
+const SCREENS = ["farm","squad","summon","boosts","shop","stats"];
 function showScreen(name){
   SCREENS.forEach(s=>{
     $("#screen-"+s).classList.toggle("active", s===name);
     const nav=$(`[data-nav="${s}"]`); if(nav) nav.classList.toggle("on", s===name);
   });
+  document.body.classList.toggle("farm-active", name==="farm");
+  if(window.World) World.setActive(name==="farm");
+  if(name==="farm") renderFarm();
   if(name==="squad") renderSquad();
   if(name==="summon") renderSummon();
   if(name==="boosts") renderBoosts();
   if(name==="shop") renderShop();
   if(name==="stats"){ renderStats(); renderDaily(); renderPrestige(); }
-  if(name==="tap") renderTapScreen();
 }
 
 function renderAll(){
-  renderHUD(); renderTapScreen(); renderSquad(); renderSummon(); renderBoosts();
+  renderHUD(); renderFarm(); renderSquad(); renderSummon(); renderBoosts();
   renderStats(); renderDaily(); renderPrestige();
 }
 
@@ -944,16 +983,21 @@ function tick(){
 
   if(S.activeBoosts.length) S.activeBoosts = S.activeBoosts.filter(b=>b.until>now);
 
+  // passive hatching toward capacity
+  const cap = capacity();
+  if(S.pop < cap){
+    S.pop = Math.min(cap, S.pop + hatchRate()*dt);
+    if(window.World) World.setPopulation(S.pop);
+  }
+
   const gain = cps()*dt;
   if(gain>0){ S.clout += gain; S.stats.totalClout += gain; }
-
-  if(combo>0 && now>comboExpire){ combo=0; updateComboUI(); }
 
   goldTimer -= dt*1000;
   if(goldTimer<=0){ spawnGold(); goldTimer = GOLD_INTERVAL[0] + Math.random()*(GOLD_INTERVAL[1]-GOLD_INTERVAL[0]); }
 
   renderHUD();
-  if($("#screen-tap").classList.contains("active")) $("#tap-power").textContent = fmt(tapBase()*tapMult()*comboMult());
+  if($("#screen-farm").classList.contains("active")) renderFarm();
   if($("#screen-boosts").classList.contains("active")) renderBoosts();
   if($("#screen-summon").classList.contains("active")) $("#banner-timer").innerHTML = ic('hourglass')+" "+bannerCountdown(activeBanner());
 
@@ -983,18 +1027,32 @@ function applyOffline(){
 /* ============================================================
    BOOT
    ============================================================ */
+let hatchHold = null;
 function bindEvents(){
-  const stage = $("#hero-stage");
-  stage.addEventListener("pointerdown", e=>{
+  // tap the field to hatch; press-and-hold the HATCH button to hatch fast
+  const field = $("#screen-farm .farm-flex");
+  if(field) field.addEventListener("pointerdown", e=>{
     if(e.target.closest(".gold-snap")) return;
-    doTap(e.clientX, e.clientY);
+    doHatch(e.clientX, e.clientY);
+  });
+  const hb = $("#hatch-btn");
+  if(hb){
+    const start = e=>{ e.preventDefault(); doHatch(); clearInterval(hatchHold); hatchHold=setInterval(()=>doHatch(), 120); };
+    const stop = ()=>{ clearInterval(hatchHold); hatchHold=null; };
+    hb.addEventListener("pointerdown", start);
+    hb.addEventListener("pointerup", stop);
+    hb.addEventListener("pointerleave", stop);
+    hb.addEventListener("pointercancel", stop);
+  }
+  $("#farm-upgrades")?.addEventListener("click", e=>{
+    const u=e.target.closest("[data-upg]"); if(u) buyFarmUpgrade(u.dataset.upg);
   });
 
   $$("[data-nav]").forEach(b=> b.addEventListener("click",()=>showScreen(b.dataset.nav)));
 
   $("#squad-list").addEventListener("click", e=>{
     const up=e.target.closest("[data-up]"); if(up){ buyUpgrade(up.dataset.up); return; }
-    const ft=e.target.closest("[data-feat]"); if(ft){ S.featured=ft.dataset.feat; renderTapScreen(); renderSquad(); save(); toast("Featured updated"); return; }
+    const ft=e.target.closest("[data-feat]"); if(ft){ S.featured=ft.dataset.feat; renderHUD(); renderFarm(); renderSquad(); save(); toast("Manager set"); return; }
     if(e.target.closest("[data-goto-summon]")) showScreen("summon");
   });
 
@@ -1055,8 +1113,12 @@ function boot(){
   $("#opt-haptics").checked = S.settings.haptics;
   const ver = $("#app-version"); if(ver) ver.textContent = GAME_VERSION;
   fillIcons();
+  // boot the 3D farm world (guarded — falls back gracefully without WebGL)
+  try {
+    if(window.World){ World.init($("#farm-canvas")); World.setPopulation(S.pop); }
+  } catch(e){ console.warn("3D world unavailable", e); }
   renderAll();
-  showScreen("tap");
+  showScreen("farm");
   checkAchievements();
   lastTick = Date.now();
   setInterval(tick, TICK_MS);

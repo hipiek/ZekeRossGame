@@ -9,19 +9,32 @@
    ============================================================ */
 
 const RARITY = {
-  common:    { name: "Common",    color: "#a8b3c2", ring: "#a8b3c2", weight: 60,  mult: 1,  rank: 1, buy: true  },
-  rare:      { name: "Rare",      color: "#3da9fc", ring: "#3da9fc", weight: 27,  mult: 3,  rank: 2, buy: true  },
-  epic:      { name: "Epic",      color: "#b06bff", ring: "#b06bff", weight: 9.5, mult: 9,  rank: 3, buy: false },
-  legendary: { name: "Legendary", color: "#ffb23e", ring: "#ffb23e", weight: 3,   mult: 28, rank: 4, buy: false },
-  mythic:    { name: "Mythic",    color: "#ff4d6d", ring: "#ff4d6d", weight: 0.5, mult: 95, rank: 5, buy: false },
+  common:    { name: "Common",    color: "#a8b3c2", ring: "#a8b3c2", weight: 70,   mult: 1,   rank: 1, buy: true  },
+  rare:      { name: "Rare",      color: "#3da9fc", ring: "#3da9fc", weight: 21,   mult: 3,   rank: 2, buy: true  },
+  epic:      { name: "Epic",      color: "#b06bff", ring: "#b06bff", weight: 7.5,  mult: 8,   rank: 3, buy: false },
+  legendary: { name: "Legendary", color: "#ffb23e", ring: "#ffb23e", weight: 1.2,  mult: 22,  rank: 4, buy: false },
+  mythic:    { name: "Mythic",    color: "#ff4d6d", ring: "#ff4d6d", weight: 0.3,  mult: 70,  rank: 5, buy: false },
 };
+
+/* Egg tiers (Egg Inc-style milestones from lifetime cash). Reaching the
+   "Legendary" tier is what unlocks Mythic managers from summons. */
+const EGG_TIERS = [
+  { name:"Edible",      at:0 },
+  { name:"Superfood",   at:2e3 },
+  { name:"Medical",     at:5e4 },
+  { name:"Rocket Fuel", at:1e6 },
+  { name:"Quantum",     at:2e7 },
+  { name:"Fusion",      at:5e8 },
+  { name:"Legendary",   at:1e10 },
+  { name:"Mythic",      at:2e11 },
+];
 const RARITY_ORDER = ["common","rare","epic","legendary","mythic"];
 
 /* ability types — active boosts triggered from the Boosts tab */
 const ABILITIES = {
-  frenzy:   { name: "Tap Frenzy",   desc: "Tap power ×8 for 12s",        dur: 12,  cd: 90,  icon: "frenzy" },
-  overdrive:{ name: "Overdrive",    desc: "Idle income ×4 for 25s",      dur: 25,  cd: 120, icon: "overdrive" },
-  goldrush: { name: "Gold Rush",    desc: "Rains 6 Golden Snaps",        dur: 0,   cd: 150, icon: "goldrush" },
+  frenzy:   { name: "Hatch Rush",   desc: "Fill the habitat + ×3 income 12s", dur: 12, cd: 90, icon: "frenzy" },
+  overdrive:{ name: "Overdrive",    desc: "Coin income ×4 for 25s",      dur: 25,  cd: 120, icon: "overdrive" },
+  goldrush: { name: "Gold Rush",    desc: "Rains 6 Golden Cats",         dur: 0,   cd: 150, icon: "goldrush" },
   cloutbomb:{ name: "Clout Bomb",   desc: "Instantly grants 90s of income", dur: 0, cd: 180, icon: "cloutbomb" },
   blackout: { name: "Blackout",     desc: "ALL income ×10 for 8s",       dur: 8,   cd: 300, icon: "blackout" },
 };
@@ -198,9 +211,9 @@ const SHOP_ITEMS = [
 
 /* Achievements: id, name, desc, check(state)->bool, reward gems */
 const ACHIEVEMENTS = [
-  { id:"firsttap",  name:"First Snap",       desc:"Tap for the first time",            gems:1,  check:s=>s.stats.totalTaps>=1 },
-  { id:"tap100",    name:"Trigger Finger",   desc:"Tap 100 times",                     gems:2,  check:s=>s.stats.totalTaps>=100 },
-  { id:"tap1000",   name:"Carpal Tunnel",    desc:"Tap 1,000 times",                   gems:5,  check:s=>s.stats.totalTaps>=1000 },
+  { id:"firsthatch",name:"First Cluck",      desc:"Start your farm",                   gems:1,  check:s=>s.pop>=8 },
+  { id:"pop100",    name:"Getting Crowded",  desc:"Reach 100 chickens",                gems:2,  check:s=>s.pop>=100 },
+  { id:"pop1000",   name:"Poultry Empire",   desc:"Reach 1,000 chickens",              gems:5,  check:s=>s.pop>=1000 },
   { id:"recruit3",  name:"Squad Forming",    desc:"Recruit 3 members",                 gems:3,  check:s=>ownedCount(s)>=3 },
   { id:"recruit10", name:"Full Roster",      desc:"Recruit 10 members",                gems:8,  check:s=>ownedCount(s)>=10 },
   { id:"recruit25", name:"Certified Crew",   desc:"Recruit 25 members",                gems:18, check:s=>ownedCount(s)>=25 },
@@ -211,8 +224,8 @@ const ACHIEVEMENTS = [
   { id:"clout1M",   name:"Micro-Influencer", desc:"Earn 1M total Clout",               gems:4,  check:s=>s.stats.totalClout>=1e6 },
   { id:"clout1B",   name:"Going Viral",      desc:"Earn 1B total Clout",               gems:10, check:s=>s.stats.totalClout>=1e9 },
   { id:"clout1T",   name:"Trending #1",      desc:"Earn 1T total Clout",               gems:20, check:s=>s.stats.totalClout>=1e12 },
-  { id:"gold10",    name:"Snap Hunter",      desc:"Catch 10 Golden Snaps",             gems:6,  check:s=>s.stats.goldCaught>=10 },
-  { id:"combo25",   name:"On Fire",          desc:"Reach a 25× combo",                 gems:8,  check:s=>s.stats.bestCombo>=25 },
+  { id:"gold10",    name:"Cat Hunter",       desc:"Catch 10 Golden Cats",              gems:6,  check:s=>s.stats.goldCaught>=10 },
+  { id:"tierLeg",   name:"Legendary Eggs",   desc:"Reach the Legendary egg tier",      gems:20, check:s=>s.stats.totalClout>=1e10 },
   { id:"summon50",  name:"Big Spender",      desc:"Summon 50 times",                   gems:12, check:s=>(s.stats.totalPulls||0)>=50 },
   { id:"rebrand1",  name:"New Era",          desc:"Rebrand for the first time",        gems:25, check:s=>s.stats.rebrands>=1 },
   { id:"streak7",   name:"Daily Devotion",   desc:"Hit a 7-day login streak",          gems:30, check:s=>s.daily.streak>=7 },

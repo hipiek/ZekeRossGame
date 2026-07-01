@@ -15,16 +15,23 @@
 </head>
 <body>
 
-<!-- FX layer for floaters/particles/golden snaps -->
+<!-- 3D farm world (fixed background, shown on the Farm screen) -->
+<canvas id="farm-canvas"></canvas>
+
+<!-- FX layer for floaters/particles/golden cats -->
 <div id="fx-layer"></div>
 <div id="toast"></div>
 
 <!-- ===================== HUD ===================== -->
 <header id="hud">
   <div class="hud-main">
+    <div id="mgr-face" class="mgr-face">
+      <img id="mgr-face-img" alt="Manager" draggable="false">
+      <span id="egg-tier" class="egg-tier">Edible</span>
+    </div>
     <div class="hud-clout">
       <span id="clout-amt">0</span>
-      <small>CLOUT</small>
+      <small>COINS</small>
     </div>
   </div>
   <div class="hud-side">
@@ -37,36 +44,38 @@
 
 <main id="app">
 
-  <!-- ===================== TAP SCREEN ===================== -->
-  <section id="screen-tap" class="screen active">
-    <div id="combo-wrap">
-      <div class="combo-top"><span id="combo-mult">1.00×</span><span id="combo-count">0 combo</span></div>
-      <div class="combo-track"><div id="combo-fill"></div></div>
+  <!-- ===================== FARM SCREEN ===================== -->
+  <section id="screen-farm" class="screen active">
+    <div class="farm-topline">
+      <span class="farm-mgr">Manager: <b id="farm-mgr-name">—</b></span>
+      <span class="farm-cps"><b id="farm-cps">0</b> coins/sec</span>
     </div>
 
-    <div id="hero-stage">
-      <div class="hero-aura"></div>
-      <img id="hero-img" src="" alt="Featured squad member" draggable="false">
-      <div class="tap-hint">TAP</div>
-    </div>
+    <div class="farm-flex"></div>
 
-    <div id="hero-card">
-      <div class="hero-row">
-        <span id="hero-name">—</span>
-        <span id="hero-rarity" class="rarity-badge">—</span>
+    <div class="farm-panel">
+      <div class="farm-popbar">
+        <span><b id="farm-pop">0</b> / <span id="farm-cap">0</span> chickens</span>
+        <div class="pop-track"><div id="farm-fill" class="pop-fill"></div></div>
       </div>
-      <p id="hero-quote">“…”</p>
-      <div class="tap-power-line">Tap power: <b id="tap-power">1</b></div>
+
+      <div id="farm-upgrades" class="farm-upgrades">
+        <button class="upg-btn" id="upg-hab" data-upg="hab"><b>Habitat</b><span class="upg-desc">Capacity</span><em class="upg-cost">—</em></button>
+        <button class="upg-btn" id="upg-feed" data-upg="feed"><b>Feed</b><span class="upg-desc">Egg value</span><em class="upg-cost">—</em></button>
+        <button class="upg-btn" id="upg-hatch" data-upg="hatch"><b>Hatchery</b><span class="upg-desc">Hatch speed</span><em class="upg-cost">—</em></button>
+      </div>
+
+      <button id="hatch-btn" class="hatch-btn"><span data-ic="squad"></span> HATCH</button>
     </div>
   </section>
 
-  <!-- ===================== SQUAD SCREEN ===================== -->
+  <!-- ===================== SQUAD / MANAGERS SCREEN ===================== -->
   <section id="screen-squad" class="screen">
     <div class="screen-head">
-      <h2>Your Squad</h2>
+      <h2>Managers</h2>
       <span class="counter" id="squad-count">0/0</span>
     </div>
-    <p class="hint">Recruit the crew with Clout. Level them up for more income &amp; tap power. Feature anyone to tap them.</p>
+    <p class="hint">Recruit &amp; level managers to boost your whole farm. Set anyone as your active Manager. Epic+ are summon-only.</p>
     <div id="squad-list"></div>
   </section>
 
@@ -152,7 +161,7 @@
 
 <!-- ===================== BOTTOM NAV ===================== -->
 <nav id="bottom-nav">
-  <button data-nav="tap" class="on"><span data-ic="tap"></span>Tap</button>
+  <button data-nav="farm" class="on"><span data-ic="tap"></span>Farm</button>
   <button data-nav="squad"><span data-ic="squad"></span>Squad</button>
   <button data-nav="summon"><span data-ic="summon"></span>Summon</button>
   <button data-nav="boosts"><span data-ic="boosts"></span>Boosts</button>
@@ -197,6 +206,7 @@
   </div>
 </div>
 
+<script type="module" src="js/world3d.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/data.js"></script>
 <script src="js/game.js"></script>

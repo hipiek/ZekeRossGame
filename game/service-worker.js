@@ -1,8 +1,9 @@
 /* Snap Squad service worker — offline-first caching */
-const CACHE = "snapsquad-v4";
+const CACHE = "snapsquad-v5";
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css", "./js/icons.js", "./js/data.js", "./js/game.js",
+  "./js/world3d.js", "./js/vendor/three.module.min.js",
   "./manifest.webmanifest",
   "./assets/icons/icon-192.png", "./assets/icons/icon-512.png",
   "./assets/fx/cookiecat.webp", "./assets/fx/summoner.webp",

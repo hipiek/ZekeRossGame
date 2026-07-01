@@ -426,6 +426,55 @@ body.sshaking{ animation:sshake .5s ease; }
 .wish-rar{ font-size:10px; font-weight:800; }
 
 /* ============================================================
+   v2 — 3D farm world, manager-face HUD, Egg-Inc loop
+   ============================================================ */
+#farm-canvas{ position:fixed; inset:0; width:100%; height:100%; z-index:0;
+  opacity:0; transition:opacity .35s; pointer-events:none; }
+body.farm-active #farm-canvas{ opacity:1; }
+
+/* manager face in the HUD (where Egg Inc shows the egg) */
+.hud-main{ display:flex; align-items:center; gap:12px; }
+.mgr-face{ position:relative; width:52px; height:52px; border-radius:50%; flex:none;
+  box-shadow:0 0 0 3px var(--ring,#3da9fc), 0 4px 12px rgba(0,0,0,.55); }
+.mgr-face img{ width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
+.egg-tier{ position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); white-space:nowrap;
+  background:#0b0f1a; border:1px solid var(--ring,#3da9fc); color:#fff; font-size:8px; font-weight:900;
+  padding:2px 6px; border-radius:8px; letter-spacing:.4px; }
+
+/* farm screen layout */
+#screen-farm{ padding:0 14px 14px; }
+#screen-farm.active{ display:flex; flex-direction:column; }
+.farm-topline{ display:flex; justify-content:space-between; align-items:center; margin-top:10px;
+  background:rgba(11,15,26,.5); backdrop-filter:blur(6px); border:1px solid #2a3358;
+  border-radius:12px; padding:8px 12px; font-size:12px; color:var(--muted); }
+.farm-topline b{ color:#fff; }
+.farm-mgr b{ color:var(--accent); }
+.farm-flex{ flex:1; min-height:140px; }         /* tappable field over the 3D scene */
+.farm-panel{ background:rgba(11,15,26,.72); backdrop-filter:blur(10px); border:1px solid #2a3358;
+  border-radius:18px; padding:12px; display:flex; flex-direction:column; gap:10px; }
+.farm-popbar{ font-size:12px; font-weight:700; }
+.farm-popbar span{ display:block; margin-bottom:5px; }
+.farm-popbar b{ color:var(--green); }
+.pop-track{ height:8px; background:#222b47; border-radius:6px; overflow:hidden; }
+.pop-fill{ height:100%; width:0; background:linear-gradient(90deg,#34d399,#3da9fc); transition:width .2s; }
+.farm-upgrades{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.upg-btn{ background:var(--panel2); border:1px solid #3a4570; color:var(--txt); border-radius:12px;
+  padding:9px 6px; display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; text-align:center; }
+.upg-btn b{ font-size:13px; }
+.upg-btn .upg-desc{ font-size:9px; color:var(--muted); }
+.upg-btn .upg-cost{ font-style:normal; font-weight:800; font-size:11px; color:var(--gold);
+  display:inline-flex; align-items:center; gap:3px; margin-top:2px; }
+.upg-btn .upg-cost .ic{ width:11px; height:11px; }
+.upg-btn.cant{ opacity:.5; }
+.upg-btn:active{ transform:scale(.97); }
+.hatch-btn{ background:linear-gradient(180deg,#ff5d5d,#d63030); color:#fff; border:none; border-radius:16px;
+  padding:15px; font-weight:900; font-size:17px; letter-spacing:1px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 22px rgba(214,48,48,.4); }
+.hatch-btn .ic{ width:22px; height:22px; }
+.hatch-btn:active{ transform:scale(.98); }
+.hatch-btn.full{ background:#2a3358; color:var(--muted); box-shadow:none; }
+
+/* ============================================================
    custom icon set — sizing & colors (replaces all emojis)
    ============================================================ */
 .ic{ width:1em; height:1em; display:inline-block; vertical-align:-.14em; flex:none; }

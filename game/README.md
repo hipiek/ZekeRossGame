@@ -1,9 +1,14 @@
 # 📱 SNAP SQUAD: Clout Empire
 
-An insanely engaging mobile tap-RPG starring the whole crew. Tap goofy faces to
-earn **Clout**, summon your squad, level them up, fire off signature abilities,
-catch Golden Snaps, prestige into new eras, and chase achievements. Built as an
-installable **PWA** — plays fully offline once loaded.
+A **3D isometric idle-farm** game (Egg Inc-style) starring the crew as **Managers**.
+Hatch a flock of low-poly chickens, upgrade your Habitat / Feed / Hatchery, and
+level your active Manager to pump **Coins**. Summon rarer Managers, catch the
+Golden Cat, fire off manager abilities with real 3D effects, and climb the egg
+tiers toward the **Legendary** tier that unlocks Mythic managers. Built with
+**Three.js** (vendored) as an installable **PWA** — plays fully offline.
+
+> v2.0 rebuilt the core from a 2D tapper into a 3D farm loop. The 2D summon
+> mascot is kept for the roll animation.
 
 ## ▶️ How to play it
 
