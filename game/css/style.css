@@ -311,15 +311,24 @@ body.sshaking{ animation:sshake .5s ease; }
 .wishlist-btn span{ color:var(--gold); }
 .odd.up{ border-color:var(--gold); }
 
-/* ---------------- SHOP (under construction) ---------------- */
-.shop-construction{ text-align:center; background:var(--panel); border:1px dashed #3a4570; border-radius:18px;
-  padding:30px 20px; margin-top:14px; }
-.shop-cones{ font-size:54px; animation:bob 1.7s ease-in-out infinite; }
-.shop-construction h3{ margin:8px 0 6px; font-size:20px; color:var(--gold); }
-.shop-construction p{ color:var(--muted); font-size:13px; line-height:1.6; max-width:330px; margin:0 auto 12px; }
-.shop-soon{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
-.soon-card{ background:var(--panel2); border:1px solid #2a3358; border-radius:12px; padding:16px 10px;
-  font-weight:800; font-size:13px; opacity:.75; }
+/* ---------------- SHOP ---------------- */
+.shop-list{ display:flex; flex-direction:column; gap:12px; margin-top:10px; }
+.shop-card{ display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid #2a3358;
+  border-radius:16px; padding:12px; }
+.shop-card.soldout{ opacity:.55; }
+.shop-ic{ width:46px; height:46px; flex:none; display:flex; align-items:center; justify-content:center;
+  background:var(--panel2); border-radius:12px; color:var(--accent); }
+.shop-ic .ic{ width:26px; height:26px; }
+.shop-info{ flex:1; min-width:0; }
+.shop-name{ font-weight:800; font-size:15px; }
+.shop-desc{ color:var(--muted); font-size:12px; margin:2px 0 3px; line-height:1.4; }
+.shop-limit{ font-size:11px; font-weight:700; color:var(--gold); }
+.shop-buy{ flex:none; display:inline-flex; align-items:center; gap:5px; background:linear-gradient(180deg,#34d399,#1f9d6b);
+  color:#04130c; border:none; padding:10px 14px; border-radius:12px; font-weight:900; font-size:13px; cursor:pointer; min-width:74px; justify-content:center; }
+.shop-buy:active{ transform:scale(.97); }
+.shop-buy.cant{ background:#2a3358; color:var(--muted); }
+.shop-buy:disabled{ background:#2a3358; color:var(--muted); cursor:default; }
+.shop-buy .ic{ width:14px; height:14px; }
 
 /* ---------------- SUMMON overlay / animation ---------------- */
 .summon-overlay{ flex-direction:column; gap:16px; background:rgba(4,6,12,.92); }
@@ -474,10 +483,6 @@ body.sshaking{ animation:sshake .5s ease; }
 .wish-check .ic{ width:14px; height:14px; color:#0b0f1a; }
 .x-btn{ display:inline-flex; align-items:center; justify-content:center; }
 .x-btn .ic{ width:15px; height:15px; }
-.shop-cones{ display:flex; justify-content:center; color:var(--gold); }
-.shop-cones .ic{ width:56px; height:56px; }
-.soon-card{ display:flex; align-items:center; justify-content:center; gap:6px; }
-.soon-card .ic{ width:18px; height:18px; }
 
 /* toast icons */
 #toast .ic{ width:14px; height:14px; vertical-align:-.15em; }

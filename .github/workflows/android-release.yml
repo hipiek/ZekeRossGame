@@ -77,6 +77,15 @@ jobs:
       - name: Apply branded launcher icons
         run: cp -R resources/android-res/. android/app/src/main/res/
 
+      - name: Stamp app version
+        run: |
+          VN="${{ steps.ver.outputs.version }}"; VN="${VN#v}"
+          IFS='.' read -r MA MI PA <<< "$VN"
+          VC=$(( ${MA:-1} * 10000 + ${MI:-0} * 100 + ${PA:-0} ))
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$VN\"/" android/app/build.gradle
+          sed -i "s/versionCode [0-9]*/versionCode $VC/" android/app/build.gradle
+          grep -nE "versionName|versionCode" android/app/build.gradle
+
       - name: Sync web assets into native project
         run: npx cap sync android
 

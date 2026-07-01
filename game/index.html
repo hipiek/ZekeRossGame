@@ -106,20 +106,9 @@
 
   <!-- ===================== SHOP SCREEN ===================== -->
   <section id="screen-shop" class="screen">
-    <div class="screen-head"><h2>Clout Shop</h2></div>
-    <div class="shop-construction">
-      <div class="shop-cones" data-ic="cones"></div>
-      <h3>Under Construction</h3>
-      <p>The Clout Shop is being built. Soon you'll trade Clout &amp; Snaps for bundles,
-         Star Snaps, boosts and exclusive cosmetics.</p>
-      <div class="shop-soon">
-        <div class="soon-card"><span data-ic="snap"></span> Snap Bundles</div>
-        <div class="soon-card"><span data-ic="star"></span> Star Packs</div>
-        <div class="soon-card"><span data-ic="bolt"></span> Boost Deals</div>
-        <div class="soon-card"><span data-ic="paint"></span> Cosmetics</div>
-      </div>
-      <p class="muted">Check back in a future update!</p>
-    </div>
+    <div class="screen-head"><h2>Clout Shop</h2><span class="counter">Restocks daily</span></div>
+    <p class="hint">Spend Clout &amp; Snaps on packs and boosts. Some deals restock every day.</p>
+    <div id="shop-list" class="shop-list"></div>
   </section>
 
   <!-- ===================== BOOSTS SCREEN ===================== -->
@@ -155,7 +144,7 @@
       <label class="opt"><span>Sound &amp; effects</span><input type="checkbox" id="opt-sfx" checked></label>
       <label class="opt"><span>Haptics (vibrate)</span><input type="checkbox" id="opt-haptics" checked></label>
       <button id="wipe-btn" class="danger-btn">Erase all progress</button>
-      <p class="credit">SNAP SQUAD: Clout Empire — starring the crew. Tap responsibly.</p>
+      <p class="credit">SNAP SQUAD: Clout Empire — starring the crew. Tap responsibly.<br>v<span id="app-version">—</span></p>
     </div>
   </section>
 

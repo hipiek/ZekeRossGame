@@ -5,6 +5,7 @@
 'use strict';
 
 const SAVE_KEY = "snapsquad.save.v1";
+const GAME_VERSION = "1.3.0";   // shown in Settings; keep in sync with package.json
 const TICK_MS = 100;            // simulation tick
 const COMBO_WINDOW = 900;       // ms to keep a combo alive
 const COMBO_MAX = 30;           // max combo multiplier contribution
@@ -58,6 +59,7 @@ function freshState(){
     gacha: freshGacha(),   // per-banner pity/50-50 state
     wishlist: [],          // char ids the player wants (max 5)
     bannerEnds: freshBannerEnds(),
+    shop: { day:0, bought:{} },  // daily shop purchase counts
     stats: { totalTaps:0, totalClout:0, goldCaught:0, bestCombo:0, rebrands:0, totalPulls:0, playStart:Date.now() },
     lastSeen: Date.now(),
     settings: { sfx:true, haptics:true },
@@ -89,6 +91,7 @@ function load(){
     if(!S.bannerEnds) S.bannerEnds = freshBannerEnds();
     BANNERS.forEach(b => { if(!S.bannerEnds[b.id]) S.bannerEnds[b.id] = Date.now()+b.durationDays*86400000; });
     if(typeof S.stats.totalPulls !== "number") S.stats.totalPulls = 0;
+    if(!S.shop || typeof S.shop.day !== "number") S.shop = { day:0, bought:{} };
     return true;
   } catch(e){ return false; }
 }
@@ -615,9 +618,70 @@ function toggleWish(id){
 }
 
 /* ============================================================
-   SHOP (under construction)
+   SHOP — Clout & Snap sinks with daily restock
    ============================================================ */
-function renderShop(){ /* static placeholder markup lives in index.html */ }
+const EXTRA_BOOST = {
+  goldfrenzy: { icon:"goldrush", name:"Gold Frenzy" },
+  overclock:  { icon:"boosts",   name:"Overclock" },
+};
+
+function shopResetIfNewDay(){
+  const today = Math.floor(Date.now()/86400000);
+  if(!S.shop || S.shop.day !== today) S.shop = { day:today, bought:{} };
+}
+
+function renderShop(){
+  shopResetIfNewDay();
+  const wrap = $("#shop-list"); if(!wrap) return; wrap.innerHTML="";
+  SHOP_ITEMS.forEach(it=>{
+    const bought = S.shop.bought[it.id]||0;
+    const soldOut = it.limit>0 && bought>=it.limit;
+    const c = it.cost(bought);
+    const amt = Math.ceil(c.amt);
+    const afford = curHave(c.cur) >= amt;
+    const card = el("div","shop-card"+(soldOut?" soldout":""));
+    card.innerHTML = `
+      <div class="shop-ic">${ic(it.icon)}</div>
+      <div class="shop-info">
+        <div class="shop-name">${it.name}</div>
+        <div class="shop-desc">${it.desc}</div>
+        ${it.limit>0?`<div class="shop-limit">${Math.max(0,it.limit-bought)}/${it.limit} left today</div>`:``}
+      </div>
+      <button class="shop-buy ${afford&&!soldOut?'':'cant'}" data-shop="${it.id}" ${soldOut?'disabled':''}>
+        ${soldOut?'SOLD OUT':`${fmt(amt)} ${ic(CURRENCY[c.cur].icon)}`}
+      </button>`;
+    wrap.appendChild(card);
+  });
+}
+
+function buyShopItem(id){
+  shopResetIfNewDay();
+  const it = SHOP_ITEMS.find(i=>i.id===id); if(!it) return;
+  const bought = S.shop.bought[id]||0;
+  if(it.limit>0 && bought>=it.limit){ toast("Sold out today — restocks tomorrow"); return; }
+  const c = it.cost(bought);
+  const amt = Math.ceil(c.amt);
+  if(curHave(c.cur) < amt){ toast(`Not enough ${CURRENCY[c.cur].name} ${ic(CURRENCY[c.cur].icon)}`); return; }
+  curSpend(c.cur, amt);
+  const r = it.reward;
+  if(r.gems) S.gems += r.gems;
+  if(r.stars) S.stars += r.stars;
+  if(r.payoutHours){
+    const g = cps()*3600*r.payoutHours;
+    S.clout += g; S.stats.totalClout += g;
+    floatText(window.innerWidth/2, window.innerHeight*0.4, "+"+fmt(g), "crit");
+  }
+  if(r.overclock){
+    S.activeBoosts.push({ type:"overclock", until:Date.now()+r.overclock.secs*1000, mult:r.overclock.mult, kind:"all" });
+  }
+  if(r.refresh) S.abilityReady = {};
+  S.shop.bought[id] = bought+1;
+  haptic(35);
+  toast(`${it.name} purchased`, "#34d399");
+  checkAchievements();
+  renderHUD(); renderShop(); renderBoosts();
+  save();
+}
 
 /* ============================================================
    BOOSTS (active abilities) screen
@@ -667,7 +731,7 @@ function renderBoosts(){
   });
   const chips = $("#active-boosts"); chips.innerHTML="";
   S.activeBoosts.forEach(b=>{
-    const A=ABILITIES[b.type]||{icon:"timer",name:b.type};
+    const A=ABILITIES[b.type]||EXTRA_BOOST[b.type]||{icon:"timer",name:b.type};
     const left=Math.max(0,(b.until-now)/1000);
     chips.appendChild(el("div","boost-chip",`${ic(A.icon)} ${A.name} ${left.toFixed(0)}s`));
   });
@@ -961,6 +1025,9 @@ function bindEvents(){
   // boosts
   $("#boost-list").addEventListener("click", e=>{ const b=e.target.closest("[data-ability]"); if(b) triggerAbility(b.dataset.ability); });
 
+  // shop
+  $("#shop-list").addEventListener("click", e=>{ const b=e.target.closest("[data-shop]"); if(b) buyShopItem(b.dataset.shop); });
+
   // prestige
   $("#rebrand-btn").addEventListener("click", rebrand);
 
@@ -981,10 +1048,12 @@ function bindEvents(){
 function boot(){
   load();
   checkDaily();
+  shopResetIfNewDay();
   applyOffline();
   bindEvents();
   $("#opt-sfx").checked = S.settings.sfx;
   $("#opt-haptics").checked = S.settings.haptics;
+  const ver = $("#app-version"); if(ver) ver.textContent = GAME_VERSION;
   fillIcons();
   renderAll();
   showScreen("tap");

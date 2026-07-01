@@ -9,11 +9,11 @@
    ============================================================ */
 
 const RARITY = {
-  common:    { name: "Common",    color: "#a8b3c2", ring: "#a8b3c2", weight: 50,  mult: 1,  rank: 1, buy: true  },
-  rare:      { name: "Rare",      color: "#3da9fc", ring: "#3da9fc", weight: 28,  mult: 3,  rank: 2, buy: true  },
-  epic:      { name: "Epic",      color: "#b06bff", ring: "#b06bff", weight: 14,  mult: 9,  rank: 3, buy: false },
-  legendary: { name: "Legendary", color: "#ffb23e", ring: "#ffb23e", weight: 6.5, mult: 28, rank: 4, buy: false },
-  mythic:    { name: "Mythic",    color: "#ff4d6d", ring: "#ff4d6d", weight: 1.5, mult: 95, rank: 5, buy: false },
+  common:    { name: "Common",    color: "#a8b3c2", ring: "#a8b3c2", weight: 60,  mult: 1,  rank: 1, buy: true  },
+  rare:      { name: "Rare",      color: "#3da9fc", ring: "#3da9fc", weight: 27,  mult: 3,  rank: 2, buy: true  },
+  epic:      { name: "Epic",      color: "#b06bff", ring: "#b06bff", weight: 9.5, mult: 9,  rank: 3, buy: false },
+  legendary: { name: "Legendary", color: "#ffb23e", ring: "#ffb23e", weight: 3,   mult: 28, rank: 4, buy: false },
+  mythic:    { name: "Mythic",    color: "#ff4d6d", ring: "#ff4d6d", weight: 0.5, mult: 95, rank: 5, buy: false },
 };
 const RARITY_ORDER = ["common","rare","epic","legendary","mythic"];
 
@@ -168,6 +168,33 @@ const BANNER_BY_ID = Object.fromEntries(BANNERS.map(b => [b.id, b]));
 function wishlistPool(){
   return ROSTER.filter(c => RARITY[c.rarity].rank >= 4); // legendary + mythic
 }
+
+/* ============================================================
+   SHOP — Clout & Snap sinks. `cost` is a fn(timesBoughtToday) ->
+   {cur, amt}; some Clout costs scale with your current income so
+   they stay relevant at every stage. limit 0 = unlimited/day.
+   ============================================================ */
+const SHOP_ITEMS = [
+  { id:"snappack", name:"Snap Pack", desc:"Instantly get 10 Snaps for summoning.",
+    icon:"snap", limit:5, reward:{ gems:10 },
+    cost:(b)=>({ cur:"clout", amt: Math.max(5000, cps()*7200) * Math.pow(1.85, b) }) },
+
+  { id:"starsnap", name:"Star Snap", desc:"A premium Star Snap for the Prestige banner.",
+    icon:"star", limit:3, reward:{ stars:1 },
+    cost:()=>({ cur:"gems", amt:60 }) },
+
+  { id:"payout", name:"Instant Payout", desc:"Instantly bank 4 hours of idle income.",
+    icon:"clout", limit:5, reward:{ payoutHours:4 },
+    cost:()=>({ cur:"gems", amt:10 }) },
+
+  { id:"overclock", name:"Overclock", desc:"2× ALL income for 15 minutes.",
+    icon:"boosts", limit:0, reward:{ overclock:{ mult:2, secs:900 } },
+    cost:()=>({ cur:"clout", amt: Math.max(10000, cps()*21600) }) },
+
+  { id:"refresh", name:"Refresh Abilities", desc:"Reset every ability cooldown right now.",
+    icon:"overdrive", limit:0, reward:{ refresh:true },
+    cost:()=>({ cur:"gems", amt:5 }) },
+];
 
 /* Achievements: id, name, desc, check(state)->bool, reward gems */
 const ACHIEVEMENTS = [

@@ -1,5 +1,5 @@
 /* Snap Squad service worker — offline-first caching */
-const CACHE = "snapsquad-v3";
+const CACHE = "snapsquad-v4";
 const ASSETS = [
   "./", "./index.html",
   "./css/style.css", "./js/icons.js", "./js/data.js", "./js/game.js",

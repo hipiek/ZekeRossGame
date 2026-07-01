@@ -35,7 +35,7 @@ app (custom icon, fullscreen, offline play).
 | **Custom art & icons** | Fully emoji-free: a hand-built inline-SVG icon set (`js/icons.js`), plus custom mascots — the golden cat collectible and the summoner who bounces around the screen while you pull. |
 | **Daily rewards** | Login streak rewards (Snaps, plus a Star Snap every 7th day). |
 | **Rebrand (prestige)** | Reset for a permanent **Influence** multiplier (+3 ⭐) once you hit 1B total Clout. |
-| **Shop** | Clout Shop screen (under construction — bundles, Star packs, boosts & cosmetics coming). |
+| **Clout Shop** | Spend Clout &amp; Snaps on Snap Packs, Star Snaps, Instant Payouts, an Overclock (2× income) and ability refreshes — with daily restock limits. |
 | **Achievements** | 17 goals that pay out Snaps 💎. |
 | **Saves** | Auto-saves to `localStorage`; offline-capable via service worker. |
 

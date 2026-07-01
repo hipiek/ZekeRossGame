@@ -1,6 +1,6 @@
 {
   "name": "snap-squad",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "SNAP SQUAD: Clout Empire — tap/idle/collection mobile game, packaged for Android with Capacitor.",
   "scripts": {
