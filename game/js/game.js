@@ -5,7 +5,7 @@
 'use strict';
 
 const SAVE_KEY = "snapsquad.save.v1";
-const GAME_VERSION = "2.1.0";   // shown in Settings; keep in sync with package.json
+const GAME_VERSION = "2.2.0";   // shown in Settings; keep in sync with package.json
 const TICK_MS = 100;            // simulation tick
 const COMBO_WINDOW = 900;       // ms to keep a combo alive
 const COMBO_MAX = 30;           // max combo multiplier contribution
@@ -717,10 +717,32 @@ function triggerAbility(type){
   renderBoosts(); renderHUD();
   save();
 }
+
+/* signature abilities — owned Epic+ managers, unique 3D VFX */
+function signatureList(){
+  const list = [];
+  for(const id in MANAGER_SIG){ if(S.squad[id] && S.squad[id].owned) list.push({ id, sig:SIGNATURES[MANAGER_SIG[id]] }); }
+  return list;
+}
+function triggerSignature(id){
+  const sig = SIGNATURES[MANAGER_SIG[id]]; if(!sig) return;
+  const now = Date.now(), key = "sig:"+id;
+  if(now < (S.abilityReady[key]||0)){ toast("On cooldown"); return; }
+  S.abilityReady[key] = now + sig.cd*1000;
+  if(sig.kind)  S.activeBoosts.push({ type:"sig:"+id, until:now+sig.dur*1000, mult:sig.mult, kind:sig.kind, sigName:sig.name, sigIcon:sig.icon });
+  if(sig.special==="coins"){ const amt=cps()*sig.secs; S.clout+=amt; S.stats.totalClout+=amt; floatText(window.innerWidth/2, window.innerHeight*0.4, "+"+fmt(amt), "crit"); }
+  if(sig.special==="fill")  hatch(capacity());
+  if(window.World) World.playSignature(sig.vfx);
+  screenShake(14); haptic(90);
+  toast(ic(sig.icon)+" "+ROSTER_BY_ID[id].name+": "+sig.name+"!", RARITY[ROSTER_BY_ID[id].rarity].ring);
+  renderBoosts(); renderHUD(); save();
+}
+
 function renderBoosts(){
   const wrap = $("#boost-list"); wrap.innerHTML="";
   const list = abilityList();
-  if(list.length===0){ wrap.innerHTML="<p class='muted'>Recruit squad members to unlock their abilities.</p>"; }
+  const sigs = signatureList();
+  if(list.length===0 && sigs.length===0){ wrap.innerHTML="<p class='muted'>Recruit managers to unlock their abilities.</p>"; }
   const now = Date.now();
   list.forEach(({ability})=>{
     const A = ABILITIES[ability];
@@ -738,9 +760,30 @@ function renderBoosts(){
       <button class="boost-go" data-ability="${ability}" ${cd>0?'disabled':''}>${cd>0?fmtTime(cd):"GO"}</button>`;
     wrap.appendChild(card);
   });
+  if(sigs.length){
+    wrap.appendChild(el("div","boost-sig-head","✦ Signature Abilities"));
+    sigs.forEach(({id,sig})=>{
+      const c = ROSTER_BY_ID[id], r = RARITY[c.rarity];
+      const ready = S.abilityReady["sig:"+id]||0;
+      const cd = Math.max(0,(ready-now)/1000);
+      const pct = cd>0 ? (1 - cd/sig.cd)*100 : 100;
+      const card = el("div","boost-card sig-card rarity-"+c.rarity+(cd>0?" cooling":""));
+      card.style.setProperty("--ring", r.ring);
+      card.innerHTML = `
+        <div class="boost-icon sig-portrait"><img src="${imgFor(id)}" alt="${c.name}"></div>
+        <div class="boost-meta">
+          <div class="boost-name">${sig.name} <small style="color:${r.ring}">${c.name}</small></div>
+          <div class="boost-desc">${sig.desc}</div>
+          <div class="cd-bar"><div class="cd-fill" style="width:${pct}%;background:${r.ring}"></div></div>
+        </div>
+        <button class="boost-go sig-go" data-sig="${id}" ${cd>0?'disabled':''}>${cd>0?fmtTime(cd):"GO"}</button>`;
+      wrap.appendChild(card);
+    });
+  }
   const chips = $("#active-boosts"); chips.innerHTML="";
   S.activeBoosts.forEach(b=>{
-    const A=ABILITIES[b.type]||EXTRA_BOOST[b.type]||BUFF_BY_ID[b.type]||{icon:"timer",name:b.type};
+    const A = b.sigName ? {icon:b.sigIcon, name:b.sigName}
+      : ABILITIES[b.type]||EXTRA_BOOST[b.type]||BUFF_BY_ID[b.type]||{icon:"timer",name:b.type};
     const left=Math.max(0,(b.until-now)/1000);
     chips.appendChild(el("div","boost-chip",`${ic(A.icon)} ${A.name} ${left.toFixed(0)}s`));
   });
@@ -1051,8 +1094,11 @@ function bindEvents(){
     else skipToReveal();
   });
 
-  // boosts
-  $("#boost-list").addEventListener("click", e=>{ const b=e.target.closest("[data-ability]"); if(b) triggerAbility(b.dataset.ability); });
+  // boosts + signatures
+  $("#boost-list").addEventListener("click", e=>{
+    const b=e.target.closest("[data-ability]"); if(b){ triggerAbility(b.dataset.ability); return; }
+    const s=e.target.closest("[data-sig]"); if(s) triggerSignature(s.dataset.sig);
+  });
 
   // shop
   $("#shop-list").addEventListener("click", e=>{ const b=e.target.closest("[data-shop]"); if(b) buyShopItem(b.dataset.shop); });

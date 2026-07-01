@@ -29,24 +29,52 @@ function cyl(rt,rb,h,seg,color){ return new THREE.Mesh(new THREE.CylinderGeometr
 
 function buildChickenParts(){
   const body = new THREE.SphereGeometry(0.62, 8, 6); body.scale(1, 0.9, 1.15);
+  const catBody = new THREE.SphereGeometry(0.72, 9, 7); catBody.scale(1, 0.94, 1.02);
   return {
-    body, head:new THREE.SphereGeometry(0.34,7,6), beak:new THREE.ConeGeometry(0.12,0.28,6),
+    body, catBody,
+    head:new THREE.SphereGeometry(0.34,7,6),
+    humanHead:new THREE.SphereGeometry(0.42,8,7),
+    hair:new THREE.SphereGeometry(0.46,8,6,0,Math.PI*2,0,Math.PI*0.62),
+    beak:new THREE.ConeGeometry(0.12,0.28,6),
+    ear:new THREE.ConeGeometry(0.16,0.32,4),
+    arm:new THREE.BoxGeometry(0.13,0.5,0.13),
+    tail:new THREE.ConeGeometry(0.13,0.42,5),
     foot:new THREE.BoxGeometry(0.1,0.06,0.22), comb:new THREE.BoxGeometry(0.1,0.16,0.28),
     white:mat(0xffffff), cream:mat(0xf7e0b0), cat:mat(0xd58a3c), gold:mat(0xffd15a),
+    skin:mat(0xd9a679), shirt:mat(0x515c6b), hairM:mat(0x2a1e16),
     beakM:mat(0xf2a53a), footM:mat(0xe08a2a), combM:mat(0xe4574e),
   };
 }
-function makeChicken(tint){
-  const g = new THREE.Group();
-  const bodyM = World.goldTint ? parts.gold : tint===1 ? parts.cat : tint===2 ? parts.cream : parts.white;
-  const body = new THREE.Mesh(parts.body, bodyM); body.position.y = 0.62; g.add(body);
-  const head = new THREE.Mesh(parts.head, bodyM); head.position.set(0,1.15,0.34); g.add(head);
-  const beak = new THREE.Mesh(parts.beak, parts.beakM); beak.position.set(0,1.12,0.66); beak.rotation.x=Math.PI/2; g.add(beak);
-  { const comb=new THREE.Mesh(parts.comb, parts.combM); comb.position.set(0,1.42,0.3); g.add(comb); }
+function feet(g){
   const f1=new THREE.Mesh(parts.foot,parts.footM); f1.position.set(-0.16,0.03,0.08); g.add(f1);
   const f2=new THREE.Mesh(parts.foot,parts.footM); f2.position.set(0.16,0.03,0.08); g.add(f2);
+}
+/* type: 0 normal bird · 1 cat-blob (cookiecat) · 2 summoner-head */
+function makeChicken(type){
+  const g = new THREE.Group();
+  if(type===1){
+    const bm = World.goldTint ? parts.gold : parts.cat;
+    const body=new THREE.Mesh(parts.catBody,bm); body.position.y=0.68; g.add(body);
+    const head=new THREE.Mesh(parts.head,bm); head.position.set(0,1.12,0.28); g.add(head);
+    [-0.22,0.22].forEach(x=>{ const e=new THREE.Mesh(parts.ear,bm); e.position.set(x,1.44,0.24); g.add(e); });
+    const tail=new THREE.Mesh(parts.tail,bm); tail.position.set(0,0.7,-0.72); tail.rotation.x=-1.0; g.add(tail);
+    feet(g); g.userData.body=body;
+  } else if(type===2){
+    const bm = World.goldTint ? parts.gold : parts.shirt;
+    const body=new THREE.Mesh(parts.body,bm); body.position.y=0.56; g.add(body);
+    const head=new THREE.Mesh(parts.humanHead,parts.skin); head.position.set(0,1.28,0.06); g.add(head);
+    const hair=new THREE.Mesh(parts.hair,parts.hairM); hair.position.set(0,1.34,0.02); hair.scale.set(1.05,1,1.05); g.add(hair);
+    [-0.52,0.52].forEach(x=>{ const a=new THREE.Mesh(parts.arm,parts.skin); a.position.set(x,0.9,0); a.rotation.z=x>0?-0.9:0.9; g.add(a); });
+    feet(g); g.userData.body=body;
+  } else {
+    const bm = World.goldTint ? parts.gold : Math.random()<0.28 ? parts.cream : parts.white;
+    const body=new THREE.Mesh(parts.body,bm); body.position.y=0.62; g.add(body);
+    const head=new THREE.Mesh(parts.head,bm); head.position.set(0,1.15,0.34); g.add(head);
+    const beak=new THREE.Mesh(parts.beak,parts.beakM); beak.position.set(0,1.12,0.66); beak.rotation.x=Math.PI/2; g.add(beak);
+    const comb=new THREE.Mesh(parts.comb,parts.combM); comb.position.set(0,1.42,0.3); g.add(comb);
+    feet(g); g.userData.body=body;
+  }
   g.scale.setScalar(0.5 + Math.random()*0.12);
-  g.userData.body = body;
   return g;
 }
 
@@ -155,8 +183,9 @@ World.init = function(canvas){
 };
 
 function spawnChicken(){
-  const tint = Math.random()<0.18?1 : Math.random()<0.25?2 : 0;
-  const g = makeChicken(tint);
+  const r = Math.random();
+  const type = r<0.16 ? 1 : r<0.28 ? 2 : 0;   // ~16% cat, ~12% summoner, rest birds
+  const g = makeChicken(type);
   g.position.set(YARD.x0 + Math.random()*(YARD.x1-YARD.x0), 0, YARD.z0 + Math.random()*(YARD.z1-YARD.z0));
   g.rotation.y = Math.random()*Math.PI*2;
   flockRoot.add(g);
@@ -211,6 +240,37 @@ function rain(color){
     d.position.set((Math.random()-0.5)*32,18+Math.random()*8,12+(Math.random()-0.5)*22); fxRoot.add(d); effects.push({mesh:d,t:0,kind:"drop",vy:-(8+Math.random()*8)}); }
 }
 
+/* ---------- signature VFX (epic / legendary / mythic) ---------- */
+const CX = 0, CZ = 11;   // scene focal point
+function flashBg(color, ms){ scene.background=new THREE.Color(color); setTimeout(()=>scene&&(scene.background=new THREE.Color(0x8fd3ff)), ms||90); }
+function bolt(x,z){ const m=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.45,44,6), new THREE.MeshBasicMaterial({color:0xcdebff,transparent:true,opacity:1}));
+  m.position.set(x,22,z); fxRoot.add(m); effects.push({mesh:m,t:0,kind:"bolt"}); }
+function groundRing(color,x,z,scale){ const m=new THREE.Mesh(new THREE.RingGeometry(0.5,1.4,36), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.95,side:THREE.DoubleSide}));
+  m.rotation.x=-Math.PI/2; m.position.set(x,0.3,z); fxRoot.add(m); effects.push({mesh:m,t:0,kind:"ring",gs:scale||10}); }
+function orb(x,y,z,color,vy,life){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.28,7,6), new THREE.MeshBasicMaterial({color,transparent:true}));
+  m.position.set(x,y,z); fxRoot.add(m); effects.push({mesh:m,t:0,kind:"drop",vy,life:life||1.1}); }
+function bubble(color,x,z){ const m=new THREE.Mesh(new THREE.SphereGeometry(1,12,10), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.5}));
+  m.position.set(x,1.5,z); fxRoot.add(m); effects.push({mesh:m,t:0,kind:"sphere"}); }
+function burst(x,y,z,color,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, sp=6+Math.random()*10;
+  orb(x,y,z,color,Math.sin(a)*sp*0.4+ (Math.random()*6), 0.9); const e=effects[effects.length-1]; e.vx=Math.cos(a)*sp; e.vz=Math.sin(a)*sp; } }
+
+function sig_storm(){ for(let i=0;i<6;i++) setTimeout(()=>{ if(!scene)return; bolt((Math.random()-0.5)*22, CZ+(Math.random()-0.5)*16); flashBg(0xffffff,70); }, i*170); }
+function sig_meteor(){ const m=new THREE.Mesh(new THREE.SphereGeometry(1.1,10,9), new THREE.MeshBasicMaterial({color:0xff7a3c}));
+  m.position.set(CX,40,CZ); fxRoot.add(m); effects.push({mesh:m,t:0,kind:"meteor"}); }
+function sig_blizzard(){ flashBg(0xd7ecff,400); for(let i=0;i<60;i++) setTimeout(()=>orb((Math.random()-0.5)*40,18+Math.random()*10,CZ+(Math.random()-0.5)*26,0xffffff,-(6+Math.random()*8),1.6), i*10); }
+function sig_evaporate(){ flashBg(0xe8fbff,120); for(let i=0;i<40;i++){ const x=(Math.random()-0.5)*20, z=CZ+(Math.random()-0.5)*16; orb(x,0.5,z,0xbfefff,(4+Math.random()*7),1.4); } }
+function sig_gold(){ groundRing(0xffd15a,CX,CZ,9); for(let i=0;i<40;i++){ const x=CX+(Math.random()-0.5)*8, z=CZ+(Math.random()-0.5)*8; orb(x,0.6,z,0xffd15a,(7+Math.random()*9),1.3); } }
+function sig_toxic(){ bubble(0x6be04a,CX,CZ); groundRing(0x8bef5a,CX,CZ,8); }
+function sig_chaos(){ const cols=[0xff4d6d,0x3da9fc,0xffd15a,0xb06bff,0x34d399];
+  for(let i=0;i<6;i++) setTimeout(()=>{ if(!scene)return; const c=cols[i%cols.length]; groundRing(c,(Math.random()-0.5)*14,CZ+(Math.random()-0.5)*12,7); flashBg(c,60); }, i*140);
+  burst(CX,2,CZ,0xffffff,24); }
+
+World.playSignature = function(vfx){
+  if(!World.ready) return;
+  ({ storm:sig_storm, meteor:sig_meteor, blizzard:sig_blizzard, evaporate:sig_evaporate,
+     gold:sig_gold, toxic:sig_toxic, chaos:sig_chaos }[vfx] || (()=>ring(0xffffff)))();
+};
+
 World.setActive = function(on){
   if(!World.ready||!renderer) return;
   renderer.setAnimationLoop(on?tick:null);
@@ -260,14 +320,22 @@ function tick(){
   // effects
   for(let i=effects.length-1;i>=0;i--){
     const e=effects[i]; e.t+=dt;
-    if(e.kind==="ring"){ const s=1+e.t*10; e.mesh.scale.set(s,s,s); e.mesh.material.opacity=Math.max(0,0.9-e.t*1.2); }
-    if(e.kind==="bolt") e.mesh.material.opacity=Math.max(0,1-e.t*3);
-    if(e.kind==="drop"){ e.mesh.position.y+=e.vy*dt; e.mesh.material.opacity=Math.max(0,1-e.t); }
-    if(e.t>1.1){ fxRoot.remove(e.mesh); effects.splice(i,1); }
+    const life = e.life || 1.1;
+    if(e.kind==="ring"){ const s=1+e.t*(e.gs||10); e.mesh.scale.set(s,s,s); e.mesh.material.opacity=Math.max(0,0.9-e.t*1.2); }
+    else if(e.kind==="bolt"){ e.mesh.material.opacity=Math.max(0,1-e.t*3); }
+    else if(e.kind==="drop"){ e.mesh.position.y+=e.vy*dt; if(e.vx) e.mesh.position.x+=e.vx*dt; if(e.vz) e.mesh.position.z+=e.vz*dt; e.mesh.material.opacity=Math.max(0,1-e.t/life); }
+    else if(e.kind==="sphere"){ const s=1+e.t*7; e.mesh.scale.set(s,s,s); e.mesh.material.opacity=Math.max(0,0.5-e.t*0.5); }
+    else if(e.kind==="meteor"){
+      e.mesh.position.y -= 90*dt;
+      if(e.mesh.position.y<=1.2){ fxRoot.remove(e.mesh); effects.splice(i,1);
+        groundRing(0xff7a3c, e.mesh.position.x, e.mesh.position.z, 14); burst(e.mesh.position.x,1.5,e.mesh.position.z,0xffb23e,26); flashBg(0xffe0b0,90); screenShakeHint(); continue; }
+    }
+    if(e.t>life && e.kind!=="meteor"){ fxRoot.remove(e.mesh); effects.splice(i,1); }
   }
 
   renderer.render(scene, camera);
 }
+function screenShakeHint(){ /* game.js handles DOM shake via haptic; noop hook */ }
 
 window.World = World;
 export default World;

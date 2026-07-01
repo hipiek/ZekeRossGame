@@ -179,6 +179,15 @@ small{ font-weight:600; }
   padding:10px 16px; border-radius:12px; font-size:13px; min-width:64px; cursor:pointer; }
 .boost-go:disabled{ background:#2a3358; color:var(--muted); }
 
+/* signature abilities (Epic+ managers) */
+.boost-sig-head{ margin:14px 0 2px; font-weight:900; font-size:14px; color:var(--gold); letter-spacing:.5px; }
+.sig-card{ border-color:var(--ring,#3a4570); box-shadow:0 0 0 1px var(--ring,#3a4570) inset, 0 8px 20px -12px var(--ring,#888); }
+.sig-portrait{ width:46px; height:46px; padding:0; }
+.sig-portrait img{ width:46px; height:46px; border-radius:12px; object-fit:cover; box-shadow:0 0 0 2px var(--ring,#888); }
+.boost-name small{ font-weight:800; font-size:11px; }
+.sig-go{ background:linear-gradient(180deg,#b06bff,#8a3ff0); color:#fff; }
+.sig-go:disabled{ background:#2a3358; color:var(--muted); }
+
 /* ---------------- daily / prestige / stats / settings ---------------- */
 .daily-box,.prestige-box,.settings-box{ background:var(--panel); border:1px solid #2a3358; border-radius:16px; padding:16px; margin-top:8px; }
 .daily-streak{ font-weight:800; font-size:16px; margin-bottom:12px; }

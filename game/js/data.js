@@ -39,6 +39,27 @@ const ABILITIES = {
   blackout: { name: "Blackout",     desc: "ALL income ×10 for 8s",       dur: 8,   cd: 300, icon: "blackout" },
 };
 
+/* Signature abilities — only Epic+ managers have these. Each has a unique 3D
+   effect (vfx) and a strong gameplay payoff on a long cooldown. */
+const SIGNATURES = {
+  storm:     { name:"Thunderstorm",  icon:"blackout",  vfx:"storm",     cd:240, desc:"Lightning storm · ×8 income 20s", kind:"all",  mult:8,  dur:20 },
+  freeze:    { name:"Deep Freeze",   icon:"overdrive", vfx:"blizzard",  cd:240, desc:"Blizzard · ×6 income 25s",        kind:"all",  mult:6,  dur:25 },
+  gold:      { name:"Gold Eruption", icon:"clout",     vfx:"gold",      cd:300, desc:"Erupt coins · +2h of income",    special:"coins", secs:7200 },
+  airstrike: { name:"Airstrike",     icon:"cloutbomb", vfx:"meteor",    cd:300, desc:"Meteor strike · +1h of income",  special:"coins", secs:3600 },
+  vanish:    { name:"Vanishing Act", icon:"blackout",  vfx:"evaporate", cd:300, desc:"Evaporate the flock · ×10 income 15s", kind:"all", mult:10, dur:15 },
+  toxic:     { name:"Toxic Cloud",   icon:"goldrush",  vfx:"toxic",     cd:240, desc:"Poison fog · ×5 income 25s",      kind:"idle", mult:5,  dur:25 },
+  chaos:     { name:"Total Chaos",   icon:"summon",    vfx:"chaos",     cd:360, desc:"Reality breaks · ×12 income 15s + fill", kind:"all", mult:12, dur:15, special:"fill" },
+};
+/* which signature each Epic+ manager wields (befitting the character) */
+const MANAGER_SIG = {
+  // epics
+  toxic:"toxic", frost:"freeze", trippy:"chaos", golfgod:"airstrike", feral:"chaos", phantom:"vanish", possessed:"vanish",
+  // legendaries
+  mustache:"gold", billion:"gold", stormcaller:"storm", contractor:"airstrike",
+  // mythics
+  panmaster:"gold", unhinged:"chaos", cursed:"vanish",
+};
+
 /* The crew. baseCps & tapBonus get multiplied by rarity.mult and level. */
 const ROSTER = [
   // ======================= COMMONS (cheap starters, lots to recruit) =======================
