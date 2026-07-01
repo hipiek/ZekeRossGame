@@ -5,7 +5,7 @@
 'use strict';
 
 const SAVE_KEY = "snapsquad.save.v1";
-const GAME_VERSION = "2.0.0";   // shown in Settings; keep in sync with package.json
+const GAME_VERSION = "2.1.0";   // shown in Settings; keep in sync with package.json
 const TICK_MS = 100;            // simulation tick
 const COMBO_WINDOW = 900;       // ms to keep a combo alive
 const COMBO_MAX = 30;           // max combo multiplier contribution
@@ -51,7 +51,7 @@ function freshState(){
     featured: "closer",
     squad,
     pop: 8,                // chickens on the farm
-    upg: { hab:0, feed:0, hatch:0 }, // habitat capacity / feed value / hatchery speed
+    upg: { hab:0, feed:0, hatch:0, veh:0 }, // habitat / feed / hatchery / vehicles
     influence: 0,          // permanent prestige multiplier source
     abilityReady: {},      // id -> timestamp when ready
     activeBoosts: [],      // {type,until,mult,kind}
@@ -59,7 +59,8 @@ function freshState(){
     achievements: {},      // id -> true
     activeBanner: "snap",
     gacha: freshGacha(),   // per-banner pity/50-50 state
-    wishlist: [],          // char ids the player wants (max 5)
+    wishlist: [],          // (legacy — unused since rolls give buffs)
+    cosmetics: [],         // owned cosmetic ids from draws
     bannerEnds: freshBannerEnds(),
     shop: { day:0, bought:{} },  // daily shop purchase counts
     stats: { totalTaps:0, totalClout:0, goldCaught:0, bestCombo:0, rebrands:0, totalPulls:0, playStart:Date.now() },
@@ -96,6 +97,8 @@ function load(){
     if(!S.shop || typeof S.shop.day !== "number") S.shop = { day:0, bought:{} };
     if(typeof S.pop !== "number") S.pop = 8;
     if(!S.upg) S.upg = { hab:0, feed:0, hatch:0 };
+    if(typeof S.upg.veh !== "number") S.upg.veh = 0;
+    if(!Array.isArray(S.cosmetics)) S.cosmetics = [];
     return true;
   } catch(e){ return false; }
 }
@@ -125,18 +128,20 @@ function featuredBonus(){
 }
 function farmMult(){ return collectionMult() * featuredBonus(); }
 
+function vehMult(){ return Math.pow(1.4, S.upg.veh); }       // vehicles = shipping/coin multiplier
 function idleMult(){
   let m = influenceMult();
   for(const b of S.activeBoosts){ if(b.kind==="idle" || b.kind==="all") m *= b.mult; }
   return m;
 }
 /* coins per second produced by the flock */
-function cps(){ return S.pop * eggValue() * farmMult() * idleMult(); }
+function cps(){ return S.pop * eggValue() * farmMult() * vehMult() * idleMult(); }
 
 /* ---- upgrade costs (steep = slow, deliberate progression) ---- */
 function habCost(){   return Math.ceil(120  * Math.pow(9, S.upg.hab)); }
 function feedCost(){  return Math.ceil(90   * Math.pow(8, S.upg.feed)); }
 function hatchCost(){ return Math.ceil(200  * Math.pow(7, S.upg.hatch)); }
+function vehCost(){   return Math.ceil(400  * Math.pow(10, S.upg.veh)); }
 
 /* ---- manager recruit / level costs (rescaled for the farm economy) ---- */
 function recruitBase(c){ return Math.ceil((RARITY[c.rarity].mult * 120 + 60)); }
@@ -228,32 +233,44 @@ function renderHUD(){
 }
 
 /* ---------- FARM screen ---------- */
+const HOTSPOTS = [
+  ["hab",  "hab",   habCost],
+  ["feed", "feed",  feedCost],
+  ["hatch","hatch", hatchCost],
+  ["veh",  "veh",   vehCost],
+];
 function renderFarm(){
-  const c = ROSTER_BY_ID[S.featured];
-  const r = RARITY[c.rarity];
   const cap = capacity();
   $("#farm-pop").textContent = fmt(Math.floor(S.pop));
   $("#farm-cap").textContent = fmt(cap);
   $("#farm-fill").style.width = Math.min(100, S.pop/cap*100)+"%";
-  $("#farm-mgr-name").textContent = c.name;
-  $("#farm-mgr-name").style.color = r.ring;
   $("#farm-cps").textContent = fmt(cps());
 
-  const rows = [
-    ["hab",  habCost(),   "Habitat", "Capacity → "+fmt(Math.floor(40*Math.pow(2.15,S.upg.hab+1)))],
-    ["feed", feedCost(),  "Feed",    "Egg value +60%"],
-    ["hatch",hatchCost(), "Hatchery","Hatch speed +50%"],
-  ];
-  rows.forEach(([key,cost,name,desc])=>{
-    const b = $("#upg-"+key); if(!b) return;
+  HOTSPOTS.forEach(([key,,costFn])=>{
+    const b = $("#hot-"+key); if(!b) return;
+    const cost = costFn();
     b.classList.toggle("cant", S.clout < cost);
-    b.querySelector(".upg-cost").innerHTML = fmt(cost)+" "+ic('clout');
-    b.querySelector(".upg-desc").textContent = desc;
+    b.querySelector(".hot-lvl").textContent = "Lv "+S.upg[key];
+    b.querySelector(".hot-cost").innerHTML = fmt(cost)+" "+ic('clout');
   });
+  positionHotspots();
   const hb = $("#hatch-btn");
   if(hb) hb.classList.toggle("full", S.pop>=cap);
-
-  // hatch button also shows manager face passively via HUD (renderHUD)
+}
+/* anchor the upgrade hotspots onto their 3D buildings (camera is fixed) */
+function positionHotspots(){
+  if(!window.World || !World.getScreen) return;
+  const W = window.innerWidth, H = window.innerHeight;
+  HOTSPOTS.forEach(([key,anchor])=>{
+    const b = $("#hot-"+key); if(!b) return;
+    const s = World.getScreen(anchor);
+    if(s && s.vis){
+      // keep hotspots inside a tappable band even if the building nears an edge
+      b.style.left = Math.max(52, Math.min(W-52, s.x)) + "px";
+      b.style.top  = Math.max(132, Math.min(H-190, s.y)) + "px";
+      b.classList.remove("off");
+    } else b.classList.add("off");
+  });
 }
 
 /* tap the farm / hatch button -> add chickens */
@@ -268,11 +285,12 @@ function doHatch(clientX, clientY){
 }
 
 function buyFarmUpgrade(key){
-  const cost = key==="hab"?habCost() : key==="feed"?feedCost() : hatchCost();
+  const cost = key==="hab"?habCost() : key==="feed"?feedCost() : key==="hatch"?hatchCost() : vehCost();
   if(S.clout < cost){ toast("Not enough Coins"); return; }
   S.clout -= cost;
   S.upg[key]++;
-  toast((key==="hab"?"Habitat":key==="feed"?"Feed":"Hatchery")+" upgraded!", "#34d399");
+  const names = { hab:"Habitat", feed:"Feed", hatch:"Hatchery", veh:"Vehicles" };
+  toast(names[key]+" upgraded!", "#34d399");
   haptic(30);
   checkAchievements();
   renderFarm(); renderHUD();
@@ -280,62 +298,76 @@ function buyFarmUpgrade(key){
 }
 
 /* ============================================================
-   SQUAD screen
+   MANAGERS — unlocked & leveled with Coins (long progression).
+   Opened from the manager face; shown as a horizontal carousel.
    ============================================================ */
-function renderSquad(){
-  const wrap = $("#squad-list"); wrap.innerHTML="";
-  ROSTER.forEach(c=>{
-    const st = S.squad[c.id];
-    const r = RARITY[c.rarity];
-    const card = el("div","sqcard rarity-"+c.rarity+(st.owned?" owned":" locked"));
-    const cost = upgradeCost(c, st.level);
-    const affordable = S.clout >= cost;
-    const isFeatured = S.featured===c.id;
-    const rollOnly = !r.buy;
-    let actionBtn;
-    if(st.owned){
-      actionBtn = `<button class="btn-up ${affordable?'':'cant'}" data-up="${c.id}">Upgrade · ${fmt(cost)} ${ic('clout')}</button>`;
-    } else if(rollOnly){
-      actionBtn = `<button class="btn-up summon-only" data-goto-summon="1">${ic('summon')} Summon only</button>`;
-    } else {
-      actionBtn = `<button class="btn-up ${affordable?'':'cant'}" data-up="${c.id}">Recruit · ${fmt(cost)} ${ic('clout')}</button>`;
-    }
-    card.innerHTML = `
-      <div class="sq-portrait" style="--ring:${r.ring}">
-        <img src="${imgFor(c.id)}" loading="lazy" alt="${c.name}">
-        ${st.owned?`<span class="lvl">Lv ${st.level}</span>`:`<span class="lock">${rollOnly?ic('summon'):ic('lock')}</span>`}
-      </div>
-      <div class="sq-info">
-        <div class="sq-top">
-          <span class="sq-name">${st.owned?c.name:(rollOnly?'???':c.name)}</span>
-          <span class="sq-rar" style="background:${r.ring}">${r.name}</span>
-        </div>
-        <div class="sq-sub">${st.owned
-            ? `Lv ${st.level} · +${fmt(r.mult*st.level)} farm boost${S.featured===c.id?' · ACTIVE':''}`
-            : (rollOnly?`Pull on the Summon banner to unlock`:`Recruit to reveal`)}</div>
-        <div class="sq-actions">
-          ${actionBtn}
-          ${st.owned?`<button class="btn-feat ${isFeatured?'on':''}" data-feat="${c.id}">${isFeatured?ic('star')+' Featured':'Feature'}</button>`:``}
-        </div>
-      </div>`;
-    wrap.appendChild(card);
-  });
-  $("#squad-count").textContent = `${ownedCount(S)}/${ROSTER.length}`;
+function managerUnlockCost(c){ return Math.ceil(200 * Math.pow(3.1, ROSTER_INDEX[c.id])); }
+function firstLockedIndex(){
+  for(let i=0;i<ROSTER.length;i++){ if(!S.squad[ROSTER[i].id].owned) return i; }
+  return ROSTER.length;
+}
+function unlockManager(id){
+  const c = ROSTER_BY_ID[id], st = S.squad[id];
+  if(st.owned) return;
+  if(ROSTER_INDEX[id] !== firstLockedIndex()){ toast("Unlock the previous manager first"); return; }
+  const cost = managerUnlockCost(c);
+  if(S.clout < cost){ toast("Not enough Coins"); return; }
+  S.clout -= cost; st.owned = true; st.level = 1; S.featured = id;
+  toast(`${c.name} joined the farm!`, RARITY[c.rarity].ring); haptic(45);
+  checkAchievements(); renderManagers(); renderHUD(); renderFarm(); renderBoosts(); save();
+}
+function levelManager(id){
+  const c = ROSTER_BY_ID[id], st = S.squad[id];
+  if(!st.owned) return;
+  const cost = upgradeCost(c, st.level);
+  if(S.clout < cost){ toast("Not enough Coins"); return; }
+  S.clout -= cost; st.level++;
+  haptic(25); checkAchievements(); renderManagers(); renderHUD(); renderFarm(); renderBoosts(); save();
+}
+function setActiveManager(id){
+  if(!S.squad[id].owned) return;
+  S.featured = id;
+  renderManagers(); renderHUD(); renderFarm(); renderBoosts(); save();
 }
 
-function buyUpgrade(id){
-  const c = ROSTER_BY_ID[id], st = S.squad[id];
-  if(!st.owned && !RARITY[c.rarity].buy){ toast("Summon-only — pull to unlock"); return; }
-  const cost = upgradeCost(c, st.level);
-  if(S.clout < cost){ toast("Not enough Clout"); return; }
-  S.clout -= cost;
-  const wasOwned = st.owned;
-  st.owned = true; st.level++;
-  if(!wasOwned){ toast(`Recruited ${c.name}!`, RARITY[c.rarity].ring); haptic(40); }
-  checkAchievements();
-  renderSquad(); renderHUD(); renderBoosts();
-  save();
+function renderManagers(){
+  const wrap = $("#manager-carousel"); if(!wrap) return; wrap.innerHTML="";
+  const nextLocked = firstLockedIndex();
+  ROSTER.forEach((c,i)=>{
+    const st = S.squad[c.id], r = RARITY[c.rarity];
+    const owned = st.owned, active = S.featured===c.id, unlockable = !owned && i===nextLocked;
+    const card = el("div","mgr-card rarity-"+c.rarity+(active?" active":"")+(owned?" owned":" locked"));
+    let action;
+    if(active){
+      action = `<button class="mgr-btn lvl" data-mgr-level="${c.id}">Level · ${fmt(upgradeCost(c,st.level))} ${ic('clout')}</button>`;
+    } else if(owned){
+      action = `<button class="mgr-btn set" data-mgr-active="${c.id}">Set Active</button>
+                <button class="mgr-btn lvl" data-mgr-level="${c.id}">Level · ${fmt(upgradeCost(c,st.level))} ${ic('clout')}</button>`;
+    } else if(unlockable){
+      const cost = managerUnlockCost(c);
+      action = `<button class="mgr-btn unlock ${S.clout>=cost?'':'cant'}" data-mgr-unlock="${c.id}">Unlock · ${fmt(cost)} ${ic('clout')}</button>`;
+    } else {
+      action = `<button class="mgr-btn locked" disabled>${ic('lock')} Locked</button>`;
+    }
+    card.innerHTML = `
+      <div class="mgr-port" style="--ring:${r.ring}">
+        <img src="${imgFor(c.id)}" loading="lazy" alt="${c.name}">
+        ${owned?`<span class="mgr-lvl">Lv ${st.level}</span>`:``}
+        ${active?`<span class="mgr-active-badge">${ic('star')} ACTIVE</span>`:``}
+      </div>
+      <div class="mgr-name">${owned||unlockable?c.name:"???"}</div>
+      <div class="mgr-rar" style="color:${r.ring}">${r.name}</div>
+      <div class="mgr-boost">${owned?`+${fmt(r.mult*st.level)} farm boost`:`${r.mult}× base boost`}</div>
+      <div class="mgr-actions">${action}</div>`;
+    wrap.appendChild(card);
+  });
+  $("#manager-count").textContent = `${ownedCount(S)}/${ROSTER.length}`;
+  // scroll active into view
+  const activeEl = wrap.querySelector(".mgr-card.active");
+  if(activeEl) activeEl.scrollIntoView({ inline:"center", block:"nearest" });
 }
+function openManagers(){ renderManagers(); $("#manager-overlay").classList.add("show"); }
+function closeManagers(){ $("#manager-overlay").classList.remove("show"); }
 
 /* ============================================================
    SUMMON (gacha) — dual banners, pity, 50/50, wishlist
@@ -351,74 +383,58 @@ function weightedRarity(){
   return "common";
 }
 
-/* pick a top-rarity NON-featured member, preferring the player's wishlist */
-function pickTopNonFeatured(banner){
-  const rar = banner.topRarity;
-  const pool = ROSTER_BY_RARITY[rar].filter(c => c.id !== banner.featured);
-  if(pool.length === 0) return ROSTER_BY_ID[banner.featured];
-  const wished = pool.filter(c => S.wishlist.includes(c.id));
-  const from = wished.length ? wished : pool;
-  return from[Math.floor(Math.random()*from.length)];
+/* ---- buff / cosmetic draws (rolls no longer give managers) ---- */
+function buffRarity(banner){
+  const w = banner.premium
+    ? { common:22, rare:30, epic:33, legendary:15 }
+    : { common:52, rare:30, epic:14, legendary:4 };
+  const keys = Object.keys(w), total = keys.reduce((a,k)=>a+w[k],0);
+  let roll = Math.random()*total;
+  for(const k of keys){ roll -= w[k]; if(roll<=0) return k; }
+  return "common";
 }
-
-function applyPull(c){
-  const st = S.squad[c.id];
-  let kind;
-  if(!st.owned){ st.owned = true; st.level = Math.max(1, st.level); kind = "new"; }
-  else { st.level += 1; kind = "dupe"; }
-  // low-rank pulls refund half the recruit price as Clout
-  let refund = 0;
-  if(RARITY[c.rarity].buy){
-    refund = Math.floor(recruitBase(c) * 0.5);
-    S.clout += refund; S.stats.totalClout += refund;
-  }
-  return { c, kind, refund };
+function applyBuff(b){
+  const now = Date.now();
+  if(b.kind){ S.activeBoosts.push({ type:b.id, until:now+b.dur*1000, mult:b.mult, kind:b.kind, buff:true }); }
+  else if(b.special==="fill"){ hatch(capacity()); }
+  else if(b.special==="coins"){ const amt=cps()*b.secs; S.clout+=amt; S.stats.totalClout+=amt; }
+  else if(b.special==="snaps"){ S.gems += b.amt; }
+  else if(b.special==="stars"){ S.stars += b.amt; }
 }
-
-function pullOne(banner){
+function applyCosmetic(c){
+  if(!S.cosmetics.includes(c.id)) S.cosmetics.push(c.id);
+  if(c.apply==="gold" && window.World) World.setGoldChickens(true);
+}
+function pullBuff(banner){
   const gs = S.gacha[banner.id];
-  gs.pity++; gs.rarePity++;
+  gs.rarePity = (gs.rarePity||0) + 1;
   S.stats.totalPulls++;
-
-  let rar;
-  if(gs.pity >= PITY_LEGENDARY){ rar = banner.topRarity; }   // hard pity for the banner top
-  else {
-    rar = weightedRarity();
-    if(gs.rarePity >= PITY_RARE && RARITY[rar].rank < 2) rar = "rare"; // guaranteed rare+ each 10
+  const cosmChance = banner.premium ? 0.05 : 0.015;
+  if(Math.random() < cosmChance){
+    const avail = COSMETICS.filter(c=>!S.cosmetics.includes(c.id));
+    const c = (avail.length?avail:COSMETICS)[Math.floor(Math.random()*(avail.length||COSMETICS.length))];
+    applyCosmetic(c);
+    return { rarity:"mythic", name:c.name, text:c.text, icon:c.icon, cosmetic:true };
   }
-  if(RARITY[rar].rank >= 2) gs.rarePity = 0;
-
-  const isTop = (rar === banner.topRarity);
-  let c;
-  if(isTop){
-    gs.pity = 0;
-    const feat = ROSTER_BY_ID[banner.featured];
-    if(gs.guaranteedFeatured || Math.random() < 0.5){
-      c = feat; gs.guaranteedFeatured = false;     // won the 50/50 (or it was guaranteed)
-    } else {
-      gs.guaranteedFeatured = true;                // lost -> next top is guaranteed featured
-      c = pickTopNonFeatured(banner);
-    }
-  } else {
-    const pool = ROSTER_BY_RARITY[rar];
-    c = pool[Math.floor(Math.random()*pool.length)];
-  }
-  return applyPull(c);
+  let rar = buffRarity(banner);
+  if(gs.rarePity >= PITY_RARE && rar==="common") rar = "rare";
+  if(rar !== "common") gs.rarePity = 0;
+  const pool = BUFF_POOL.filter(b=>b.rarity===rar);
+  const b = (pool.length?pool:BUFF_POOL)[Math.floor(Math.random()*(pool.length||BUFF_POOL.length))];
+  applyBuff(b);
+  return { rarity:b.rarity, name:b.name, text:b.text, icon:b.icon };
 }
 
 function summon(n){
   const banner = activeBanner();
   const cost = n===1 ? banner.costSingle : banner.costTen;
   const cur = banner.currency;
-  if(curHave(cur) < cost){
-    toast(`Not enough ${CURRENCY[cur].name} ${ic(CURRENCY[cur].icon)}`);
-    return;
-  }
+  if(curHave(cur) < cost){ toast(`Not enough ${CURRENCY[cur].name} ${ic(CURRENCY[cur].icon)}`); return; }
   curSpend(cur, cost);
   const results = [];
-  for(let i=0;i<n;i++) results.push(pullOne(banner));
+  for(let i=0;i<n;i++) results.push(pullBuff(banner));
   checkAchievements();
-  renderHUD(); renderSquad(); renderBoosts(); renderSummon();
+  renderHUD(); renderBoosts(); renderSummon();
   save();
   playSummon(results, banner);
 }
@@ -432,8 +448,6 @@ function bannerCountdown(banner){
 function renderSummon(){
   const banner = activeBanner();
   const gs = S.gacha[banner.id];
-  const feat = ROSTER_BY_ID[banner.featured];
-  const r = RARITY[feat.rarity];
 
   // banner tabs
   const tabs = $("#banner-tabs"); tabs.innerHTML="";
@@ -445,32 +459,31 @@ function renderSummon(){
     tabs.appendChild(t);
   });
 
-  // featured stage
+  // draw stage (buff draw art)
   const stage = $("#featured-stage");
   stage.style.setProperty("--accent", banner.accent);
   stage.innerHTML = `
     <div class="feat-rays"></div>
     <div class="feat-glow"></div>
-    <img class="feat-img" src="${imgFor(feat.id)}" alt="${feat.name}">
-    <div class="feat-badge" style="background:${r.ring}">${ic('star')} FEATURED ${r.name.toUpperCase()}</div>
+    <div class="draw-face">${ic(banner.theme)}</div>
+    <div class="feat-badge" style="background:${banner.accent}">${banner.premium?'PREMIUM DRAW':'BUFF DRAW'}</div>
     <div class="feat-meta">
-      <div class="feat-name" style="color:${r.ring}">${feat.name}</div>
-      <div class="feat-quote">“${feat.quote}”</div>
+      <div class="feat-name" style="color:${banner.accent}">${banner.name}</div>
+      <div class="feat-quote">${banner.premium?'Stronger buffs · higher cosmetic chance':'Temporary buffs to boost your farm'}</div>
     </div>`;
 
-  // banner title + countdown
   $("#banner-name").textContent = banner.name;
   $("#banner-tagline").textContent = banner.tagline;
   $("#banner-timer").innerHTML = ic('hourglass')+" "+bannerCountdown(banner);
 
-  // pity meter
-  const toGuarantee = Math.max(0, PITY_LEGENDARY - gs.pity);
-  $("#pity-count").textContent = toGuarantee;
-  $("#pity-top").textContent = RARITY[banner.topRarity].name;
-  $("#pity-fill").style.width = (gs.pity/PITY_LEGENDARY*100)+"%";
+  // pity meter — guaranteed Rare+ buff
+  const toG = Math.max(0, PITY_RARE - (gs.rarePity||0));
+  $("#pity-count").textContent = toG;
+  $("#pity-top").textContent = "Rare+";
+  $("#pity-fill").style.width = ((gs.rarePity||0)/PITY_RARE*100)+"%";
   $("#pity-fill").style.background = banner.accent;
-  $("#fifty-state").textContent = gs.guaranteedFeatured ? "Guaranteed FEATURED next" : "50/50 next";
-  $("#fifty-state").className = "fifty "+(gs.guaranteedFeatured?"guaranteed":"");
+  $("#fifty-state").textContent = banner.premium ? "Cosmetic 5%" : "Cosmetic 1.5%";
+  $("#fifty-state").className = "fifty";
 
   // buttons w/ cost + currency
   const curIcon = ic(CURRENCY[banner.currency].icon);
@@ -482,17 +495,13 @@ function renderSummon(){
   $("#pull-1").classList.toggle("cant", have < banner.costSingle);
   $("#pull-10").classList.toggle("cant", have < banner.costTen);
 
-  // wishlist button
-  $("#wishlist-count").textContent = `${S.wishlist.length}/5`;
-
-  // odds list
+  // odds by buff rarity
   const odds = $("#odds-list"); odds.innerHTML="";
-  const total = RARITY_ORDER.reduce((a,k)=>a+RARITY[k].weight,0);
-  RARITY_ORDER.forEach(k=>{
+  const w = banner.premium ? {common:22,rare:30,epic:33,legendary:15} : {common:52,rare:30,epic:14,legendary:4};
+  const total = Object.values(w).reduce((a,b)=>a+b,0);
+  ["common","rare","epic","legendary"].forEach(k=>{
     const rr=RARITY[k];
-    const isTop = k===banner.topRarity;
-    odds.appendChild(el("div","odd"+(isTop?" up":""),
-      `<span style='color:${rr.ring}'>${rr.name}${isTop?' '+ic('up'):''}</span><span>${(rr.weight/total*100).toFixed(1)}%</span>`));
+    odds.appendChild(el("div","odd",`<span style='color:${rr.ring}'>${rr.name} buff</span><span>${(w[k]/total*100).toFixed(0)}%</span>`));
   });
 }
 
@@ -505,7 +514,7 @@ function clearSummonTimers(){ summonTimers.forEach(clearTimeout); summonTimers =
 function sTimeout(fn, ms){ const t=setTimeout(fn, ms); summonTimers.push(t); return t; }
 
 function bestRarity(results){
-  return results.reduce((b,res)=> RARITY[res.c.rarity].rank>RARITY[b].rank ? res.c.rarity : b, "common");
+  return results.reduce((b,res)=> RARITY[res.rarity].rank>RARITY[b].rank ? res.rarity : b, "common");
 }
 
 function flashScreen(color){
@@ -570,27 +579,24 @@ function revealCards(results, banner, instant){
   $("#summon-skip").classList.remove("show");
 
   results.forEach((res,i)=>{
-    const r = RARITY[res.c.rarity];
+    const r = RARITY[res.rarity];
     const top = r.rank>=4;
-    const card = el("div","reveal-card rar-"+res.c.rarity+(top?" cinematic":""));
+    const card = el("div","reveal-card buff-reveal rar-"+res.rarity+(top?" cinematic":""));
     const delay = instant?0 : 0.12 + i*0.14;
     card.style.setProperty("--d", delay+"s");
-    const featTag = res.c.id===banner.featured ? `<span class="rv-feat">${ic('star')} FEATURED</span>` : "";
-    const refundTag = res.refund>0 ? `<span class="rv-refund">+${fmt(res.refund)} ${ic('clout')}</span>` : "";
+    const tag = res.cosmetic ? `<span class="rv-feat">${ic('star')} COSMETIC</span>` : "";
     card.innerHTML = `
       <div class="rv-inner">
         <div class="rv-back"><span>?</span></div>
         <div class="rv-front" style="--ring:${r.ring}">
           <div class="rv-rays"></div>
-          <img src="${imgFor(res.c.id)}" alt="${res.c.name}">
-          <div class="rv-grad"></div>
-          <div class="rv-info">
-            <div class="rv-rar" style="color:${r.ring}">${r.name}</div>
-            <div class="rv-name">${res.c.name}</div>
+          <div class="buff-face">
+            <div class="buff-ic" style="color:${r.ring}">${ic(res.icon)}</div>
+            <div class="rv-rar" style="color:${r.ring}">${res.cosmetic?'COSMETIC':r.name+' buff'}</div>
+            <div class="rv-name">${res.name}</div>
+            <div class="buff-text">${res.text}</div>
           </div>
-          ${featTag}
-          <div class="rv-tag ${res.kind}">${res.kind==="new"?"NEW!":"+1 LV"}</div>
-          ${refundTag}
+          ${tag}
         </div>
       </div>`;
     cards.appendChild(card);
@@ -617,39 +623,6 @@ function closeSummon(){
   clearSummonTimers();
   pendingReveal = null;
   $("#summon-overlay").classList.remove("show","summoning","revealed");
-}
-
-/* ============================================================
-   WISHLIST
-   ============================================================ */
-function renderWishlist(){
-  const wrap = $("#wishlist-grid"); wrap.innerHTML="";
-  wishlistPool().forEach(c=>{
-    const r = RARITY[c.rarity];
-    const on = S.wishlist.includes(c.id);
-    const owned = S.squad[c.id].owned;
-    const card = el("div","wish-card rarity-"+c.rarity+(on?" on":""));
-    card.dataset.wish = c.id;
-    card.innerHTML = `
-      <div class="wish-port" style="--ring:${r.ring}">
-        <img src="${imgFor(c.id)}" loading="lazy" alt="${c.name}">
-        ${on?`<span class="wish-check">${ic('check')}</span>`:''}
-        ${owned?'<span class="wish-owned">OWNED</span>':''}
-      </div>
-      <div class="wish-name">${c.name}</div>
-      <div class="wish-rar" style="color:${r.ring}">${r.name}</div>`;
-    wrap.appendChild(card);
-  });
-  $("#wishlist-modal-count").textContent = `${S.wishlist.length}/5 selected`;
-}
-function toggleWish(id){
-  const i = S.wishlist.indexOf(id);
-  if(i>=0){ S.wishlist.splice(i,1); }
-  else {
-    if(S.wishlist.length>=5){ toast("Wishlist full (max 5)"); return; }
-    S.wishlist.push(id);
-  }
-  renderWishlist(); renderSummon(); save();
 }
 
 /* ============================================================
@@ -767,7 +740,7 @@ function renderBoosts(){
   });
   const chips = $("#active-boosts"); chips.innerHTML="";
   S.activeBoosts.forEach(b=>{
-    const A=ABILITIES[b.type]||EXTRA_BOOST[b.type]||{icon:"timer",name:b.type};
+    const A=ABILITIES[b.type]||EXTRA_BOOST[b.type]||BUFF_BY_ID[b.type]||{icon:"timer",name:b.type};
     const left=Math.max(0,(b.until-now)/1000);
     chips.appendChild(el("div","boost-chip",`${ic(A.icon)} ${A.name} ${left.toFixed(0)}s`));
   });
@@ -951,7 +924,7 @@ function toast(msg, color){
 /* ============================================================
    NAV / SCREENS
    ============================================================ */
-const SCREENS = ["farm","squad","summon","boosts","shop","stats"];
+const SCREENS = ["farm","summon","boosts","shop","stats"];
 function showScreen(name){
   SCREENS.forEach(s=>{
     $("#screen-"+s).classList.toggle("active", s===name);
@@ -960,7 +933,6 @@ function showScreen(name){
   document.body.classList.toggle("farm-active", name==="farm");
   if(window.World) World.setActive(name==="farm");
   if(name==="farm") renderFarm();
-  if(name==="squad") renderSquad();
   if(name==="summon") renderSummon();
   if(name==="boosts") renderBoosts();
   if(name==="shop") renderShop();
@@ -968,7 +940,7 @@ function showScreen(name){
 }
 
 function renderAll(){
-  renderHUD(); renderFarm(); renderSquad(); renderSummon(); renderBoosts();
+  renderHUD(); renderFarm(); renderSummon(); renderBoosts();
   renderStats(); renderDaily(); renderPrestige();
 }
 
@@ -1044,17 +1016,21 @@ function bindEvents(){
     hb.addEventListener("pointerleave", stop);
     hb.addEventListener("pointercancel", stop);
   }
-  $("#farm-upgrades")?.addEventListener("click", e=>{
+  // upgrade hotspots anchored to the buildings
+  $("#farm-hotspots")?.addEventListener("click", e=>{
     const u=e.target.closest("[data-upg]"); if(u) buyFarmUpgrade(u.dataset.upg);
   });
 
-  $$("[data-nav]").forEach(b=> b.addEventListener("click",()=>showScreen(b.dataset.nav)));
-
-  $("#squad-list").addEventListener("click", e=>{
-    const up=e.target.closest("[data-up]"); if(up){ buyUpgrade(up.dataset.up); return; }
-    const ft=e.target.closest("[data-feat]"); if(ft){ S.featured=ft.dataset.feat; renderHUD(); renderFarm(); renderSquad(); save(); toast("Manager set"); return; }
-    if(e.target.closest("[data-goto-summon]")) showScreen("summon");
+  // manager face -> carousel overlay
+  $("#mgr-face")?.addEventListener("click", openManagers);
+  $("#manager-close")?.addEventListener("click", closeManagers);
+  $("#manager-carousel")?.addEventListener("click", e=>{
+    const u=e.target.closest("[data-mgr-unlock]"); if(u){ unlockManager(u.dataset.mgrUnlock); return; }
+    const l=e.target.closest("[data-mgr-level]");  if(l){ levelManager(l.dataset.mgrLevel); return; }
+    const a=e.target.closest("[data-mgr-active]");  if(a){ setActiveManager(a.dataset.mgrActive); return; }
   });
+
+  $$("[data-nav]").forEach(b=> b.addEventListener("click",()=>showScreen(b.dataset.nav)));
 
   // banner tabs
   $("#banner-tabs").addEventListener("click", e=>{
@@ -1074,11 +1050,6 @@ function bindEvents(){
     if($("#summon-overlay").classList.contains("revealed")) closeSummon();
     else skipToReveal();
   });
-
-  // wishlist
-  $("#wishlist-open").addEventListener("click", ()=>{ renderWishlist(); $("#wishlist-overlay").classList.add("show"); });
-  $("#wishlist-close").addEventListener("click", ()=> $("#wishlist-overlay").classList.remove("show"));
-  $("#wishlist-grid").addEventListener("click", e=>{ const w=e.target.closest("[data-wish]"); if(w) toggleWish(w.dataset.wish); });
 
   // boosts
   $("#boost-list").addEventListener("click", e=>{ const b=e.target.closest("[data-ability]"); if(b) triggerAbility(b.dataset.ability); });
@@ -1115,7 +1086,11 @@ function boot(){
   fillIcons();
   // boot the 3D farm world (guarded — falls back gracefully without WebGL)
   try {
-    if(window.World){ World.init($("#farm-canvas")); World.setPopulation(S.pop); }
+    if(window.World){
+      World.init($("#farm-canvas"));
+      World.setPopulation(S.pop);
+      if(S.cosmetics.includes("gold_chickens")) World.setGoldChickens(true);
+    }
   } catch(e){ console.warn("3D world unavailable", e); }
   renderAll();
   showScreen("farm");

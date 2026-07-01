@@ -441,38 +441,90 @@ body.farm-active #farm-canvas{ opacity:1; }
   background:#0b0f1a; border:1px solid var(--ring,#3da9fc); color:#fff; font-size:8px; font-weight:900;
   padding:2px 6px; border-radius:8px; letter-spacing:.4px; }
 
-/* farm screen layout */
-#screen-farm{ padding:0 14px 14px; }
-#screen-farm.active{ display:flex; flex-direction:column; }
-.farm-topline{ display:flex; justify-content:space-between; align-items:center; margin-top:10px;
-  background:rgba(11,15,26,.5); backdrop-filter:blur(6px); border:1px solid #2a3358;
-  border-radius:12px; padding:8px 12px; font-size:12px; color:var(--muted); }
-.farm-topline b{ color:#fff; }
-.farm-mgr b{ color:var(--accent); }
-.farm-flex{ flex:1; min-height:140px; }         /* tappable field over the 3D scene */
-.farm-panel{ background:rgba(11,15,26,.72); backdrop-filter:blur(10px); border:1px solid #2a3358;
-  border-radius:18px; padding:12px; display:flex; flex-direction:column; gap:10px; }
-.farm-popbar{ font-size:12px; font-weight:700; }
+/* farm screen: transparent overlays on top of the 3D scene */
+#screen-farm{ padding:0; }
+#screen-farm.active{ display:block; }
+.farm-flex{ position:fixed; inset:0; z-index:1; }   /* tap field to hatch */
+
+/* upgrade hotspots anchored to 3D buildings (positioned by JS) */
+#farm-hotspots{ position:fixed; inset:0; z-index:3; pointer-events:none; }
+.hotspot{ position:fixed; transform:translate(-50%,-100%); pointer-events:auto; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:1px; min-width:74px;
+  background:rgba(11,15,26,.82); backdrop-filter:blur(6px); border:1px solid #3a4570;
+  border-radius:12px; padding:6px 10px; color:#fff; box-shadow:0 6px 16px rgba(0,0,0,.45); }
+.hotspot::after{ content:""; position:absolute; bottom:-6px; left:50%; transform:translateX(-50%);
+  border:6px solid transparent; border-top-color:#3a4570; }
+.hotspot b{ font-size:12px; }
+.hotspot .hot-lvl{ font-size:9px; color:var(--muted); font-weight:700; }
+.hotspot .hot-cost{ font-style:normal; font-weight:900; font-size:12px; color:var(--gold);
+  display:inline-flex; align-items:center; gap:3px; }
+.hotspot .hot-cost .ic{ width:12px; height:12px; }
+.hotspot.cant{ opacity:.6; }
+.hotspot.cant .hot-cost{ color:var(--muted); }
+.hotspot.off{ display:none; }
+.hotspot:active{ transform:translate(-50%,-100%) scale(.95); }
+
+/* slim status bar just above the nav */
+.farm-popbar{ position:fixed; left:14px; right:14px; bottom:calc(78px + var(--safe-bot)); z-index:4;
+  background:rgba(11,15,26,.6); backdrop-filter:blur(8px); border:1px solid #2a3358; border-radius:12px;
+  padding:7px 12px; font-size:12px; font-weight:700; }
 .farm-popbar span{ display:block; margin-bottom:5px; }
 .farm-popbar b{ color:var(--green); }
-.pop-track{ height:8px; background:#222b47; border-radius:6px; overflow:hidden; }
+.pop-track{ height:6px; background:#222b47; border-radius:6px; overflow:hidden; }
 .pop-fill{ height:100%; width:0; background:linear-gradient(90deg,#34d399,#3da9fc); transition:width .2s; }
-.farm-upgrades{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
-.upg-btn{ background:var(--panel2); border:1px solid #3a4570; color:var(--txt); border-radius:12px;
-  padding:9px 6px; display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; text-align:center; }
-.upg-btn b{ font-size:13px; }
-.upg-btn .upg-desc{ font-size:9px; color:var(--muted); }
-.upg-btn .upg-cost{ font-style:normal; font-weight:800; font-size:11px; color:var(--gold);
-  display:inline-flex; align-items:center; gap:3px; margin-top:2px; }
-.upg-btn .upg-cost .ic{ width:11px; height:11px; }
-.upg-btn.cant{ opacity:.5; }
-.upg-btn:active{ transform:scale(.97); }
-.hatch-btn{ background:linear-gradient(180deg,#ff5d5d,#d63030); color:#fff; border:none; border-radius:16px;
-  padding:15px; font-weight:900; font-size:17px; letter-spacing:1px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 22px rgba(214,48,48,.4); }
-.hatch-btn .ic{ width:22px; height:22px; }
-.hatch-btn:active{ transform:scale(.98); }
-.hatch-btn.full{ background:#2a3358; color:var(--muted); box-shadow:none; }
+
+/* round HATCH action button (Egg-Inc style) */
+.hatch-fab{ position:fixed; right:18px; bottom:calc(120px + var(--safe-bot)); z-index:6;
+  width:70px; height:70px; border-radius:50%; border:3px solid #fff;
+  background:radial-gradient(circle at 40% 35%, #ff6b6b, #d63030); color:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 10px 26px rgba(214,48,48,.5); }
+.hatch-fab .ic{ width:34px; height:34px; }
+.hatch-fab:active{ transform:scale(.94); }
+.hatch-fab.full{ background:#2a3358; border-color:#3a4570; }
+
+/* ===== manager carousel overlay ===== */
+.manager-overlay{ align-items:flex-end; padding:0; }
+.manager-panel{ width:100%; max-height:82vh; background:var(--panel); border-top-left-radius:22px;
+  border-top-right-radius:22px; border:1px solid #2a3358; border-bottom:none; padding:16px 0 20px;
+  display:flex; flex-direction:column; gap:10px; animation:slideUp .28s ease; }
+@keyframes slideUp{ from{ transform:translateY(60px); opacity:0; } to{ transform:none; opacity:1; } }
+.manager-head{ display:flex; justify-content:space-between; align-items:center; padding:0 18px; }
+.manager-head h2{ margin:0; }
+.manager-sub{ color:var(--muted); font-size:12px; }
+.manager-sub b{ color:var(--txt); }
+.manager-carousel{ display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; padding:6px 18px 4px; }
+.mgr-card{ scroll-snap-align:center; flex:0 0 160px; background:var(--panel2); border:1px solid #2a3358;
+  border-radius:16px; padding:12px; text-align:center; position:relative; }
+.mgr-card.active{ border-color:var(--ring,#3da9fc); box-shadow:0 0 0 1px var(--ring,#3da9fc), 0 10px 24px -8px var(--ring,#3da9fc); }
+.mgr-card.locked{ opacity:.9; }
+.mgr-port{ position:relative; }
+.mgr-port img{ width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; box-shadow:0 0 0 2px var(--ring); }
+.mgr-card.locked .mgr-port img{ filter:grayscale(.85) brightness(.6); }
+.mgr-lvl{ position:absolute; bottom:6px; right:6px; background:var(--ring); color:#0b0f1a; font-size:10px; font-weight:900; padding:2px 7px; border-radius:9px; }
+.mgr-active-badge{ position:absolute; top:6px; left:6px; background:#fff; color:#0b0f1a; font-size:8px; font-weight:900; padding:2px 6px; border-radius:8px; display:inline-flex; align-items:center; gap:2px; }
+.mgr-active-badge .ic{ width:9px; height:9px; }
+.mgr-name{ font-weight:800; font-size:14px; margin-top:8px; }
+.mgr-rar{ font-size:11px; font-weight:800; }
+.mgr-boost{ font-size:11px; color:var(--muted); margin:2px 0 8px; }
+.mgr-actions{ display:flex; flex-direction:column; gap:6px; }
+.mgr-btn{ border:none; border-radius:10px; padding:8px; font-weight:800; font-size:12px; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:4px; }
+.mgr-btn .ic{ width:12px; height:12px; }
+.mgr-btn.lvl{ background:var(--panel); color:var(--txt); border:1px solid #3a4570; }
+.mgr-btn.set{ background:var(--accent); color:#04121f; }
+.mgr-btn.unlock{ background:linear-gradient(180deg,#34d399,#1f9d6b); color:#04130c; }
+.mgr-btn.unlock.cant{ background:#2a3358; color:var(--muted); }
+.mgr-btn.locked{ background:#222b47; color:var(--muted); }
+
+/* buff reveal cards (front shows an icon + effect instead of a portrait) */
+.draw-face{ position:absolute; left:50%; top:36%; transform:translate(-50%,-50%); z-index:2; }
+.draw-face .ic{ width:120px; height:120px; color:var(--accent); filter:drop-shadow(0 0 22px var(--accent)); }
+.buff-reveal .rv-front{ display:flex; align-items:center; justify-content:center; }
+.buff-face{ position:relative; z-index:2; text-align:center; padding:8px; }
+.buff-ic .ic{ width:46px; height:46px; }
+.buff-face .rv-rar{ font-size:10px; font-weight:900; margin-top:6px; }
+.buff-face .rv-name{ font-size:13px; font-weight:800; }
+.buff-text{ font-size:10px; color:var(--muted); margin-top:3px; }
 
 /* ============================================================
    custom icon set — sizing & colors (replaces all emojis)

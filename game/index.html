@@ -46,37 +46,24 @@
 
   <!-- ===================== FARM SCREEN ===================== -->
   <section id="screen-farm" class="screen active">
-    <div class="farm-topline">
-      <span class="farm-mgr">Manager: <b id="farm-mgr-name">—</b></span>
-      <span class="farm-cps"><b id="farm-cps">0</b> coins/sec</span>
-    </div>
-
+    <!-- tap the open field to hatch -->
     <div class="farm-flex"></div>
 
-    <div class="farm-panel">
-      <div class="farm-popbar">
-        <span><b id="farm-pop">0</b> / <span id="farm-cap">0</span> chickens</span>
-        <div class="pop-track"><div id="farm-fill" class="pop-fill"></div></div>
-      </div>
-
-      <div id="farm-upgrades" class="farm-upgrades">
-        <button class="upg-btn" id="upg-hab" data-upg="hab"><b>Habitat</b><span class="upg-desc">Capacity</span><em class="upg-cost">—</em></button>
-        <button class="upg-btn" id="upg-feed" data-upg="feed"><b>Feed</b><span class="upg-desc">Egg value</span><em class="upg-cost">—</em></button>
-        <button class="upg-btn" id="upg-hatch" data-upg="hatch"><b>Hatchery</b><span class="upg-desc">Hatch speed</span><em class="upg-cost">—</em></button>
-      </div>
-
-      <button id="hatch-btn" class="hatch-btn"><span data-ic="squad"></span> HATCH</button>
+    <!-- upgrade hotspots anchored to the 3D buildings (positioned by JS) -->
+    <div id="farm-hotspots">
+      <button class="hotspot" id="hot-hab"   data-upg="hab"><b>Habitat</b><span class="hot-lvl">Lv 0</span><em class="hot-cost">—</em></button>
+      <button class="hotspot" id="hot-feed"  data-upg="feed"><b>Feed</b><span class="hot-lvl">Lv 0</span><em class="hot-cost">—</em></button>
+      <button class="hotspot" id="hot-hatch" data-upg="hatch"><b>Hatchery</b><span class="hot-lvl">Lv 0</span><em class="hot-cost">—</em></button>
+      <button class="hotspot" id="hot-veh"   data-upg="veh"><b>Vehicles</b><span class="hot-lvl">Lv 0</span><em class="hot-cost">—</em></button>
     </div>
-  </section>
 
-  <!-- ===================== SQUAD / MANAGERS SCREEN ===================== -->
-  <section id="screen-squad" class="screen">
-    <div class="screen-head">
-      <h2>Managers</h2>
-      <span class="counter" id="squad-count">0/0</span>
+    <!-- slim status bar -->
+    <div class="farm-popbar">
+      <span><b id="farm-pop">0</b>/<span id="farm-cap">0</span> chickens · <b id="farm-cps">0</b>/s</span>
+      <div class="pop-track"><div id="farm-fill" class="pop-fill"></div></div>
     </div>
-    <p class="hint">Recruit &amp; level managers to boost your whole farm. Set anyone as your active Manager. Epic+ are summon-only.</p>
-    <div id="squad-list"></div>
+
+    <button id="hatch-btn" class="hatch-fab" aria-label="Hatch"><span data-ic="tap"></span></button>
   </section>
 
   <!-- ===================== SUMMON SCREEN ===================== -->
@@ -106,9 +93,7 @@
       <button id="pull-10" class="big-btn alt">Summon ×10 · <b id="ten-cost">45</b><span id="ten-cur" class="btn-cur"></span></button>
     </div>
 
-    <button id="wishlist-open" class="wishlist-btn"><span data-ic="heart"></span> Wishlist <span id="wishlist-count">0/5</span></button>
-
-    <h3 class="odds-title">Drop Rates <small>(rate-up featured)</small></h3>
+    <h3 class="odds-title">Buff Odds <small>(per draw)</small></h3>
     <div id="odds-list" class="odds"></div>
     <p class="hint center">Common &amp; Rare pulls refund half their recruit price as Clout. Epic+ are summon-only.</p>
   </section>
@@ -162,8 +147,7 @@
 <!-- ===================== BOTTOM NAV ===================== -->
 <nav id="bottom-nav">
   <button data-nav="farm" class="on"><span data-ic="tap"></span>Farm</button>
-  <button data-nav="squad"><span data-ic="squad"></span>Squad</button>
-  <button data-nav="summon"><span data-ic="summon"></span>Summon</button>
+  <button data-nav="summon"><span data-ic="summon"></span>Draw</button>
   <button data-nav="boosts"><span data-ic="boosts"></span>Boosts</button>
   <button data-nav="shop"><span data-ic="shop"></span>Shop</button>
   <button data-nav="stats"><span data-ic="more"></span>More</button>
@@ -182,17 +166,18 @@
   <button id="summon-continue" class="summon-continue">TAP TO CONTINUE</button>
 </div>
 
-<!-- ===================== WISHLIST MODAL ===================== -->
-<div id="wishlist-overlay" class="overlay">
-  <div class="overlay-inner card-panel wishlist-panel">
-    <div class="wishlist-head">
-      <h2><span data-ic="heart"></span> Wishlist</h2>
-      <button id="wishlist-close" class="x-btn" data-ic="close"></button>
+<!-- ===================== MANAGER CAROUSEL ===================== -->
+<div id="manager-overlay" class="overlay manager-overlay">
+  <div class="manager-panel">
+    <div class="manager-head">
+      <div>
+        <h2>Managers</h2>
+        <span class="manager-sub">Unlock the next with Coins · <b id="manager-count">0/0</b></span>
+      </div>
+      <button id="manager-close" class="x-btn" data-ic="close"></button>
     </div>
-    <p class="hint">Pick up to 5 roll-only stars. When you pull a top-rarity off the
-       featured rate-up, it's drawn from your wishlist first.</p>
-    <div id="wishlist-modal-count" class="wishlist-modal-count">0/5 selected</div>
-    <div id="wishlist-grid" class="wishlist-grid"></div>
+    <div id="manager-carousel" class="manager-carousel"></div>
+    <p class="hint center">Swipe → to see who's next. Progress manager to manager to power up your farm.</p>
   </div>
 </div>
 

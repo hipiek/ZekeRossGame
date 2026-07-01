@@ -133,6 +133,7 @@ const ROSTER = [
 ];
 
 const ROSTER_BY_ID = Object.fromEntries(ROSTER.map(c => [c.id, c]));
+const ROSTER_INDEX = Object.fromEntries(ROSTER.map((c,i) => [c.id, i])); // progression order
 const ROSTER_BY_RARITY = RARITY_ORDER.reduce((m,r)=>{ m[r]=ROSTER.filter(c=>c.rarity===r); return m; }, {});
 
 /* ============================================================
@@ -144,43 +145,39 @@ const CURRENCY = {
   stars: { name: "Star Snaps", icon: "star" },
 };
 
-const PITY_LEGENDARY = 100;   // guaranteed banner-top rarity within this many pulls
-const PITY_RARE      = 10;    // guaranteed rare-or-better within this many pulls
+const PITY_RARE = 10;    // guaranteed rare-or-better buff within this many pulls
 
-/* Two live campaigns. Featured shows large on the pull screen; the banner's
-   "top" rarity is rate-up + governed by 50/50 + hard pity. */
+/* Two draw banners. Summons now grant TEMPORARY BUFFS (and a small cosmetic
+   chance) — not managers. Managers are unlocked with Coins on the Farm. */
 const BANNERS = [
-  {
-    id: "snap",
-    name: "Snap Summon",
-    tagline: "Featured Legendary — limited time",
-    currency: "gems",
-    costSingle: 5,
-    costTen: 45,
-    featured: "billion",      // Legendary rate-up
-    topRarity: "legendary",
-    durationDays: 14,
-    accent: "#ffb23e",
-  },
-  {
-    id: "prestige",
-    name: "Prestige Summon",
-    tagline: "Premium Mythic banner — Star Snaps only",
-    currency: "stars",
-    costSingle: 1,
-    costTen: 9,
-    featured: "unhinged",     // Mythic rate-up
-    topRarity: "mythic",
-    durationDays: 21,
-    accent: "#ff4d6d",
-  },
+  { id:"snap",     name:"Snap Draw",     tagline:"Temporary buffs for your farm",   currency:"gems",  costSingle:5, costTen:45, premium:false, accent:"#ffb23e", theme:"overdrive", durationDays:14 },
+  { id:"prestige", name:"Prestige Draw", tagline:"Premium buffs + cosmetic chance",  currency:"stars", costSingle:1, costTen:9,  premium:true,  accent:"#ff4d6d", theme:"star",      durationDays:21 },
 ];
 const BANNER_BY_ID = Object.fromEntries(BANNERS.map(b => [b.id, b]));
 
-/* Characters eligible for the wishlist: the roll-only top-tier crew. */
-function wishlistPool(){
-  return ROSTER.filter(c => RARITY[c.rarity].rank >= 4); // legendary + mythic
-}
+/* Temporary buffs a draw can grant. dur in seconds (0 = instant).
+   kind all/idle -> pushes an income multiplier boost; special -> one-shot. */
+const BUFF_POOL = [
+  { id:"income2",  name:"Overdrive",    icon:"overdrive", rarity:"common",    kind:"all",  mult:2,  dur:180, text:"×2 income · 3m" },
+  { id:"hatch",    name:"Hatch Rush",   icon:"frenzy",    rarity:"common",    special:"fill",        text:"Fill the habitat" },
+  { id:"coins",    name:"Coin Cache",   icon:"clout",     rarity:"common",    special:"coins", secs:900, text:"+15m of coins" },
+  { id:"income3",  name:"Power Surge",  icon:"overdrive", rarity:"rare",      kind:"all",  mult:3,  dur:240, text:"×3 income · 4m" },
+  { id:"feed3",    name:"Feed Frenzy",  icon:"goldrush",  rarity:"rare",      kind:"idle", mult:3,  dur:300, text:"×3 income · 5m" },
+  { id:"snaps",    name:"Snap Windfall",icon:"snap",      rarity:"rare",      special:"snaps", amt:8, text:"+8 Snaps" },
+  { id:"coinsBig", name:"Coin Vault",   icon:"clout",     rarity:"epic",      special:"coins", secs:3600, text:"+1h of coins" },
+  { id:"income5",  name:"Blackout",     icon:"blackout",  rarity:"epic",      kind:"all",  mult:5,  dur:180, text:"×5 income · 3m" },
+  { id:"star",     name:"Star Fragment",icon:"star",      rarity:"epic",      special:"stars", amt:1, text:"+1 Star Snap" },
+  { id:"income10", name:"Clout Storm",  icon:"blackout",  rarity:"legendary", kind:"all",  mult:10, dur:180, text:"×10 income · 3m" },
+  { id:"coinsHuge",name:"Coin Mint",    icon:"clout",     rarity:"legendary", special:"coins", secs:14400, text:"+4h of coins" },
+];
+const BUFF_BY_ID = Object.fromEntries(BUFF_POOL.map(b => [b.id, b]));
+
+/* Rare cosmetics (small draw chance). Some apply a visible change. */
+const COSMETICS = [
+  { id:"gold_chickens", name:"Golden Chickens", icon:"star",  apply:"gold", text:"Your whole flock turns gold" },
+  { id:"sunset_coop",   name:"Sunset Palette",  icon:"paint", apply:"none", text:"A warm farm palette (badge)" },
+  { id:"disco_flock",   name:"Disco Flock",     icon:"summon",apply:"none", text:"Party vibes (badge)" },
+];
 
 /* ============================================================
    SHOP — Clout & Snap sinks. `cost` is a fn(timesBoughtToday) ->
