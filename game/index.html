@@ -74,6 +74,7 @@
       <div class="build-head">
         <b>Build your park</b>
         <span id="build-count" class="muted">0 placed</span>
+        <button id="demolish-btn" class="x-btn demolish" title="Demolish" data-ic="cones"></button>
         <button id="build-close" class="x-btn" data-ic="close"></button>
       </div>
       <div id="build-list" class="build-list"></div>
@@ -130,6 +131,9 @@
 
   <!-- ===================== STATS / MORE SCREEN ===================== -->
   <section id="screen-stats" class="screen">
+    <div class="screen-head"><h2>Daily Goals</h2></div>
+    <div id="goals-list" class="goals-list"></div>
+
     <div class="screen-head"><h2>Daily Reward</h2></div>
     <div id="daily-box" class="daily-box"></div>
 
@@ -200,7 +204,7 @@
   <div class="overlay-inner card-panel">
     <h2>Welcome back!</h2>
     <p>You were away for <b id="offline-time">—</b>.</p>
-    <p class="big-earn">+<span id="offline-amt">0</span> Clout</p>
+    <p class="big-earn">+<span id="offline-amt">0</span> Coins</p>
     <p class="hint">(earned at 50% idle rate while away)</p>
     <button id="offline-collect" class="big-btn">Collect</button>
   </div>

@@ -239,6 +239,20 @@ const SHOP_ITEMS = [
     cost:()=>({ cur:"gems", amt:5 }) },
 ];
 
+/* ============================================================
+   DAILY GOALS — 3 rotate in each day. Progress is measured as a
+   delta from when the goal was assigned (base snapshot).
+   ============================================================ */
+const GOAL_DEFS = [
+  { id:"earn",   name:"Coin Rush",     icon:"clout",   desc:t=>`Earn ${t} Coins`,          measure:s=>s.stats.totalClout, target:()=>Math.max(2000, Math.ceil(cps()*2400)), reward:{gems:4} },
+  { id:"pulls",  name:"Lucky Streak",  icon:"summon",  desc:t=>`Make ${t} draws`,          measure:s=>s.stats.totalPulls||0, target:()=>5,  reward:{gems:5} },
+  { id:"gold",   name:"Cat Chaser",    icon:"star",    desc:t=>`Catch ${t} Golden Cats`,   measure:s=>s.stats.goldCaught, target:()=>3,  reward:{gems:4} },
+  { id:"build",  name:"Park Architect",icon:"hammer",  desc:t=>`Place ${t} buildings`,     measure:s=>s.buildings.length, target:()=>2,  reward:{gems:5} },
+  { id:"upg",    name:"Renovator",     icon:"boosts",  desc:t=>`Buy ${t} farm upgrades`,   measure:s=>s.upg.hab+s.upg.feed+s.upg.hatch+s.upg.veh, target:()=>2, reward:{gems:6} },
+  { id:"golden", name:"Egg Hunter",    icon:"trophy",  desc:t=>`Catch ${t} Golden Chicken`,measure:s=>s.stats.goldenCaught||0, target:()=>1, reward:{stars:1} },
+];
+const GOAL_BY_ID = Object.fromEntries(GOAL_DEFS.map(g=>[g.id,g]));
+
 /* Achievements: id, name, desc, check(state)->bool, reward gems */
 const ACHIEVEMENTS = [
   { id:"firsthatch",name:"First Cluck",      desc:"Start your farm",                   gems:1,  check:s=>s.pop>=8 },

@@ -195,6 +195,26 @@ small{ font-weight:600; }
 .sig-go{ background:linear-gradient(180deg,#b06bff,#8a3ff0); color:#fff; }
 .sig-go:disabled{ background:#2a3358; color:var(--muted); }
 
+/* daily goals */
+.goals-list{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+.goal-row{ display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid #2a3358;
+  border-radius:14px; padding:11px 14px; }
+.goal-row.done{ border-color:var(--gold); }
+.goal-row.claimed{ opacity:.55; }
+.goal-ic{ width:34px; display:flex; justify-content:center; color:var(--accent); }
+.goal-ic .ic{ width:24px; height:24px; }
+.goal-meta{ flex:1; min-width:0; }
+.goal-meta b{ font-size:14px; display:block; }
+.goal-meta span{ color:var(--muted); font-size:12px; display:block; margin:1px 0 6px; }
+.goal-claim{ border:none; border-radius:10px; padding:9px 12px; font-weight:900; font-size:12px; min-width:70px;
+  background:linear-gradient(180deg,#ffd166,#e8a81f); color:#231a04; cursor:pointer; }
+.goal-claim:disabled{ background:#2a3358; color:var(--muted); }
+.goal-claim .ic{ width:14px; height:14px; }
+
+/* demolish toggle in the build panel */
+.x-btn.demolish{ color:#ff9a6e; }
+.x-btn.demolish.on{ background:#ff9a6e; color:#1a0d06; border-color:#ff9a6e; }
+
 /* ---------------- daily / prestige / stats / settings ---------------- */
 .daily-box,.prestige-box,.settings-box{ background:var(--panel); border:1px solid #2a3358; border-radius:16px; padding:16px; margin-top:8px; }
 .daily-streak{ font-weight:800; font-size:16px; margin-bottom:12px; }

@@ -26,7 +26,11 @@ let flock = [], flockRoot, fxRoot, effects = [];
 let trucks = [];
 let parts = null;
 let blocks = [];                    // AABBs chickens avoid: {x0,x1,z0,z1}
-let placedRoot;                     // player-placed buildings
+let placedRoot, placedItems = [];   // player-placed buildings
+let sun, hemi, winM;                // day/night actors
+let golden = null;                  // the tappable golden chicken event
+const DAY_LEN = 240;                // seconds per full day/night cycle
+const SKY_DAY = new THREE.Color(0x8fd3ff), SKY_NIGHT = new THREE.Color(0x141d33), SKY_DUSK = new THREE.Color(0xff9a6e);
 const anchors = {};
 const _pv = new THREE.Vector3();
 const _ray = new THREE.Raycaster();
@@ -40,7 +44,7 @@ function mat(color){ return new THREE.MeshLambertMaterial({ color }); }
 function at(m,x,y,z){ m.position.set(x,y,z); return m; }
 function box(w,h,d,color){ return new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat(color)); }
 function cyl(rt,rb,h,seg,color){ return new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg), mat(color)); }
-function addBlock(x,z,w,d){ blocks.push({ x0:x-w/2, x1:x+w/2, z0:z-d/2, z1:z+d/2 }); }
+function addBlock(x,z,w,d){ const b={ x0:x-w/2, x1:x+w/2, z0:z-d/2, z1:z+d/2 }; blocks.push(b); return b; }
 
 /* ---------- chickens (3 model types) ---------- */
 function buildChickenParts(){
@@ -150,7 +154,7 @@ function buildEnvironment(){
   coop.add(at(box(13.8,0.7,8.8,0x3a3f47),0,5.35,0));
   coop.add(at(box(2.4,3,0.3,0x2c2f36),-3,1.6,4.05));           // door (front, faces +z)
   coop.add(at(box(3.2,0.35,1.3,0xe4574e),-3,3.35,4.4));        // awning
-  [1.5,4.5].forEach(x=> coop.add(at(box(1.6,1.4,0.25,0x9fd8ff),x,2.7,4.05)) ); // windows
+  [1.5,4.5].forEach(x=>{ const w=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.4,0.25),winM); w.position.set(x,2.7,4.05); coop.add(w); }); // windows
   coop.position.set(14,0,-4); scene.add(coop);
   addBlock(14,-4,13.6,8.6);
   anchors.hab = new THREE.Vector3(14,6.4,-4);
@@ -172,7 +176,7 @@ function buildEnvironment(){
   hatchery.add(at(box(6.5,3.2,4.6,0xdedfe4),0,1.6,0));
   hatchery.add(at(box(6.9,0.6,5,0x2c8f5a),0,3.5,0));
   hatchery.add(at(box(1.2,1.2,1.2,0x2c8f5a),1.8,4.1,0));
-  hatchery.add(at(box(1.2,1.1,0.22,0x9fd8ff),-1.6,1.8,2.35));
+  { const w=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.1,0.22),winM); w.position.set(-1.6,1.8,2.35); hatchery.add(w); }
   hatchery.position.set(24,0,12); scene.add(hatchery);
   addBlock(24,12,7.2,5.4);
   anchors.hatch = new THREE.Vector3(24,4.2,12);
@@ -231,9 +235,48 @@ World.addBuilding = function(type,gx,gz,skipCheck){
   const t=PLACEABLE[type]; if(!t) return false;
   if(!skipCheck && !cellFree(gx,gz,t.w,t.d)) return false;
   const g=t.make(); g.position.set(gx*GRID,0,gz*GRID); placedRoot.add(g);
-  addBlock(gx*GRID,gz*GRID,t.w*GRID,t.d*GRID);
+  const b = addBlock(gx*GRID,gz*GRID,t.w*GRID,t.d*GRID);
+  placedItems.push({ gx, gz, group:g, block:b });
   return true;
 };
+World.removeBuildingAt = function(gx,gz){
+  const i = placedItems.findIndex(p=>p.gx===gx && p.gz===gz);
+  if(i<0) return false;
+  const p = placedItems[i];
+  placedRoot.remove(p.group);
+  const bi = blocks.indexOf(p.block); if(bi>=0) blocks.splice(bi,1);
+  placedItems.splice(i,1);
+  burstFx(gx*GRID, 1.2, gz*GRID, 0xd8dce2, 14);
+  return true;
+};
+
+/* ---------- golden chicken event (tap it in the 3D world!) ---------- */
+World.spawnGolden = function(){
+  if(!World.ready || golden) return false;
+  const g = makeChicken(0);
+  g.traverse(o=>{ if(o.isMesh) o.material = parts.gold; });
+  g.scale.setScalar(1.15);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(1.1,1.5,24),
+    new THREE.MeshBasicMaterial({ color:0xffd15a, transparent:true, opacity:0.85, side:THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI/2; ring.position.y = 0.12; g.add(ring);
+  g.position.set(ROAM.x0+Math.random()*(ROAM.x1-ROAM.x0), 0, ROAM.z0+Math.random()*(ROAM.z1-ROAM.z0));
+  scene.add(g);
+  golden = { group:g, ring, vx:(Math.random()-0.5)*2, vz:(Math.random()-0.5)*2, t:0, life:22 };
+  return true;
+};
+World.goldenHit = function(px,py){
+  if(!golden || !renderer) return false;
+  _pv.copy(golden.group.position); _pv.y = 1; _pv.project(camera);
+  const el = renderer.domElement;
+  const sx=(_pv.x*0.5+0.5)*el.clientWidth, sy=(-_pv.y*0.5+0.5)*el.clientHeight;
+  if(Math.hypot(px-sx, py-sy) > 55) return false;
+  const p = golden.group.position;
+  burstFx(p.x, 1.5, p.z, 0xffd15a, 30);
+  groundRing(0xffd15a, p.x, p.z, 10);
+  scene.remove(golden.group); golden = null;
+  return true;
+};
+World.hasGolden = function(){ return !!golden; };
 /* screen px -> grid cell (raycast onto the ground plane) */
 World.gridFromScreen = function(px,py){
   if(!World.ready) return null;
@@ -325,8 +368,9 @@ World.init = function(canvas){
 
   camera = new THREE.OrthographicCamera(-1,1,1,-1,0.1,600);
 
-  scene.add(new THREE.HemisphereLight(0xcfe9ff, 0x6a8a4a, 0.95));
-  const sun = new THREE.DirectionalLight(0xfff4d6, 1.05); sun.position.set(30, 55, 18); scene.add(sun);
+  hemi = new THREE.HemisphereLight(0xcfe9ff, 0x6a8a4a, 0.95); scene.add(hemi);
+  sun = new THREE.DirectionalLight(0xfff4d6, 1.05); sun.position.set(30, 55, 18); scene.add(sun);
+  winM = mat(0x9fd8ff);   // shared window material — glows at night
 
   parts = buildChickenParts();
   placedRoot = new THREE.Group(); scene.add(placedRoot);
@@ -418,6 +462,34 @@ World.resize = function(){ if(World.ready) applyCamera(); };
 /* ---------- render loop ---------- */
 function tick(){
   const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+
+  // ---- day/night cycle: sun arcs, sky grades, windows glow at night ----
+  {
+    const ang = ((t/DAY_LEN)+0.25)*Math.PI*2;        // start at noon
+    const sh = Math.sin(ang);                        // sun height (-1..1)
+    sun.position.set(Math.cos(ang)*70, sh*60+8, 25);
+    sun.intensity = Math.max(0.04, sh)*1.05;
+    hemi.intensity = 0.3 + Math.max(0,sh)*0.65;
+    const daylight = Math.max(0, Math.min(1, sh*2+0.5));       // 0 night .. 1 day
+    const duskiness = Math.max(0, 1-Math.abs(sh)*4);           // peaks at horizon
+    const sky = SKY_NIGHT.clone().lerp(SKY_DAY, daylight).lerp(SKY_DUSK, duskiness*0.55);
+    scene.background = sky; if(scene.fog) scene.fog.color = sky;
+    winM.emissive.setHex(sh < 0.05 ? 0xffc46a : 0x000000);     // warm windows after dark
+  }
+
+  // ---- golden chicken event: wanders, pulses, times out ----
+  if(golden){
+    const g = golden.group;
+    golden.t += dt;
+    g.position.x += golden.vx*dt; g.position.z += golden.vz*dt;
+    if(Math.random()<0.02){ golden.vx=(Math.random()-0.5)*2.5; golden.vz=(Math.random()-0.5)*2.5; }
+    g.position.x = Math.max(ROAM.x0, Math.min(ROAM.x1, g.position.x));
+    g.position.z = Math.max(ROAM.z0, Math.min(ROAM.z1, g.position.z));
+    g.position.y = Math.abs(Math.sin(golden.t*5))*0.5;
+    golden.ring.scale.setScalar(1+Math.sin(golden.t*4)*0.15);
+    golden.ring.material.opacity = 0.55+Math.sin(golden.t*4)*0.3;
+    if(golden.t > golden.life){ scene.remove(g); golden = null; }
+  }
 
   for(let i=0;i<flock.length;i++){
     const c=flock[i], g=c.group;

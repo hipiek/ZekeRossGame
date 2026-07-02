@@ -5,13 +5,10 @@
 'use strict';
 
 const SAVE_KEY = "snapsquad.save.v1";
-const GAME_VERSION = "2.3.0";   // shown in Settings; keep in sync with package.json
+const GAME_VERSION = "3.0.0";   // shown in Settings; keep in sync with package.json
 const TICK_MS = 100;            // simulation tick
-const COMBO_WINDOW = 900;       // ms to keep a combo alive
-const COMBO_MAX = 30;           // max combo multiplier contribution
-const CRIT_CHANCE = 0.08;
-const CRIT_MULT = 12;
-const GOLD_INTERVAL = [16000, 34000]; // random golden-snap spawn window (ms)
+const GOLD_INTERVAL = [16000, 34000];   // frisbee-cat spawn window (ms)
+const GOLDEN_INTERVAL = [70000, 160000]; // 3D golden-chicken event window (ms)
 
 /* ---------------- number formatting ---------------- */
 const SUFFIX = ["","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","Ud","Dd","Td"];
@@ -63,9 +60,10 @@ function freshState(){
     cosmetics: [],         // owned cosmetic ids from draws
     parkName: "ZekeRoss Ranch",   // the player's egg park name
     buildings: [],         // placed tycoon buildings: {t, gx, gz}
+    goals: { day:0, items:[] },   // daily goals: {id, base, target, claimed}
     bannerEnds: freshBannerEnds(),
     shop: { day:0, bought:{} },  // daily shop purchase counts
-    stats: { totalTaps:0, totalClout:0, goldCaught:0, bestCombo:0, rebrands:0, totalPulls:0, playStart:Date.now() },
+    stats: { totalTaps:0, totalClout:0, goldCaught:0, goldenCaught:0, bestCombo:0, rebrands:0, totalPulls:0, playStart:Date.now() },
     lastSeen: Date.now(),
     settings: { sfx:true, haptics:true },
     version: 2,
@@ -103,6 +101,8 @@ function load(){
     if(!Array.isArray(S.cosmetics)) S.cosmetics = [];
     if(typeof S.parkName !== "string" || !S.parkName) S.parkName = "ZekeRoss Ranch";
     if(!Array.isArray(S.buildings)) S.buildings = [];
+    if(!S.goals || !Array.isArray(S.goals.items)) S.goals = { day:0, items:[] };
+    if(typeof S.stats.goldenCaught !== "number") S.stats.goldenCaught = 0;
     return true;
   } catch(e){ return false; }
 }
@@ -987,6 +987,81 @@ function renderDaily(){
 }
 
 /* ============================================================
+   DAILY GOALS — three rotating objectives per day
+   ============================================================ */
+function assignGoals(){
+  const today = Math.floor(Date.now()/86400000);
+  if(S.goals.day === today && S.goals.items.length) return;
+  const picks = [];
+  for(let i=0;i<3;i++) picks.push(GOAL_DEFS[(today*3+i) % GOAL_DEFS.length]);
+  S.goals = { day: today, items: picks.map(g=>({ id:g.id, base:g.measure(S), target:g.target(), claimed:false })) };
+  save();
+}
+function goalProgress(it){ return Math.max(0, GOAL_BY_ID[it.id].measure(S) - it.base); }
+function claimGoal(idx){
+  const it = S.goals.items[idx]; if(!it || it.claimed) return;
+  if(goalProgress(it) < it.target){ toast("Not done yet"); return; }
+  const g = GOAL_BY_ID[it.id];
+  it.claimed = true;
+  if(g.reward.gems) S.gems += g.reward.gems;
+  if(g.reward.stars) S.stars += g.reward.stars;
+  toast(`${ic('trophy')} ${g.name} complete! +${g.reward.gems?g.reward.gems+" "+ic('snap'):""}${g.reward.stars?g.reward.stars+" "+ic('star'):""}`, "#ffd166");
+  haptic(45); renderHUD(); renderGoals(); save();
+}
+function renderGoals(){
+  const wrap = $("#goals-list"); if(!wrap) return; wrap.innerHTML="";
+  assignGoals();
+  S.goals.items.forEach((it,idx)=>{
+    const g = GOAL_BY_ID[it.id]; if(!g) return;
+    const prog = Math.min(goalProgress(it), it.target);
+    const done = prog >= it.target;
+    const row = el("div","goal-row"+(it.claimed?" claimed":done?" done":""));
+    row.innerHTML = `
+      <div class="goal-ic">${ic(g.icon)}</div>
+      <div class="goal-meta">
+        <b>${g.name}</b><span>${g.desc(fmt(it.target))}</span>
+        <div class="cd-bar"><div class="cd-fill" style="width:${prog/it.target*100}%"></div></div>
+      </div>
+      <button class="goal-claim" data-goal="${idx}" ${it.claimed||!done?'disabled':''}>
+        ${it.claimed?ic('check'):done?'CLAIM':fmt(prog)+"/"+fmt(it.target)}
+      </button>`;
+    wrap.appendChild(row);
+  });
+}
+
+/* ============================================================
+   GOLDEN CHICKEN — rare tappable event in the 3D world
+   ============================================================ */
+let goldenTimer = 30000;   // first one ~30s in
+function catchGolden(){
+  S.stats.goldenCaught++;
+  const amt = Math.max(cps()*300, 200);
+  S.clout += amt; S.stats.totalClout += amt;
+  if(Math.random()<0.3) S.stars += 1;
+  floatText(window.innerWidth/2, window.innerHeight*0.4, "+"+fmt(amt)+" GOLDEN!", "gold");
+  toast(ic('trophy')+" Golden Chicken caught! +"+fmt(amt)+" "+ic('clout'), "#ffd15a");
+  screenShake(10); haptic(80);
+  checkAchievements(); renderHUD(); save();
+}
+
+/* ---------- demolish mode ---------- */
+let demolishMode = false;
+function tryDemolish(px, py){
+  const cell = window.World && World.gridFromScreen ? World.gridFromScreen(px, py) : null;
+  if(!cell) return true;
+  const i = S.buildings.findIndex(b=>b.gx===cell.gx && b.gz===cell.gz);
+  if(i<0){ toast("No building there"); return true; }
+  const b = S.buildings[i];
+  S.buildings.splice(i,1);
+  const refund = Math.ceil(buildCost(b.t) * 0.5);   // 50% of current price tier
+  S.clout += refund;
+  World.removeBuildingAt(cell.gx, cell.gz);
+  toast(`${BUILD_BY_ID[b.t].name} demolished · +${fmt(refund)} ${ic('clout')} refund`, "#ff9a6e");
+  haptic(40); renderHUD(); renderFarm(); save();
+  return true;
+}
+
+/* ============================================================
    STATS screen
    ============================================================ */
 function renderStats(){
@@ -1037,7 +1112,7 @@ function showScreen(name){
   if(name==="summon") renderSummon();
   if(name==="boosts") renderBoosts();
   if(name==="shop") renderShop();
-  if(name==="stats"){ renderStats(); renderDaily(); renderPrestige(); }
+  if(name==="stats"){ renderGoals(); renderStats(); renderDaily(); renderPrestige(); }
 }
 
 function renderAll(){
@@ -1068,6 +1143,14 @@ function tick(){
 
   goldTimer -= dt*1000;
   if(goldTimer<=0){ spawnGold(); goldTimer = GOLD_INTERVAL[0] + Math.random()*(GOLD_INTERVAL[1]-GOLD_INTERVAL[0]); }
+
+  // rare golden chicken joins the flock (farm screen only)
+  goldenTimer -= dt*1000;
+  if(goldenTimer<=0){
+    if(window.World && World.spawnGolden && $("#screen-farm").classList.contains("active") && World.spawnGolden())
+      toast(ic('trophy')+" A Golden Chicken appeared — tap it!", "#ffd15a");
+    goldenTimer = GOLDEN_INTERVAL[0] + Math.random()*(GOLDEN_INTERVAL[1]-GOLDEN_INTERVAL[0]);
+  }
 
   renderHUD();
   if($("#screen-farm").classList.contains("active")) renderFarm();
@@ -1108,7 +1191,9 @@ function bindEvents(){
   if(field && window.World && World.attachControls){
     World.attachControls(field, { onTap:(x,y)=>{
       if(document.elementFromPoint(x,y)?.closest?.(".gold-snap")) return;
+      if(demolishMode){ tryDemolish(x,y); return; }
       if(buildMode){ tryPlaceBuilding(x,y); return; }
+      if(World.goldenHit && World.goldenHit(x,y)){ catchGolden(); return; }
       doHatch(x,y);
     }});
   }
@@ -1118,11 +1203,20 @@ function bindEvents(){
   $("#build-close")?.addEventListener("click", ()=>toggleBuildPanel(false));
   $("#build-list")?.addEventListener("click", e=>{
     const b=e.target.closest("[data-build]"); if(!b) return;
+    demolishMode = false;
     buildMode = (buildMode===b.dataset.build) ? null : b.dataset.build;
     renderBuildPanel();
     if(buildMode){ toggleBuildPanel(false); $("#build-panel").classList.remove("show"); toast("Tap the grass to place — 1 finger twists, 2 pan"); }
   });
+  $("#demolish-btn")?.addEventListener("click", ()=>{
+    buildMode = null;
+    demolishMode = !demolishMode;
+    $("#demolish-btn").classList.toggle("on", demolishMode);
+    toggleBuildPanel(false);
+    toast(demolishMode ? "Demolish mode: tap a placed building (50% refund)" : "Demolish mode off", "#ff9a6e");
+  });
   $("#park-name")?.addEventListener("click", renamePark);
+  $("#goals-list")?.addEventListener("click", e=>{ const g=e.target.closest("[data-goal]"); if(g) claimGoal(+g.dataset.goal); });
   const hb = $("#hatch-btn");
   if(hb){
     const start = e=>{ e.preventDefault(); doHatch(); clearInterval(hatchHold); hatchHold=setInterval(()=>doHatch(), 120); };
@@ -1214,6 +1308,7 @@ function boot(){
     }
   } catch(e){ console.warn("3D world unavailable", e); }
   renderParkName();
+  assignGoals();
   renderAll();
   showScreen("farm");
   checkAchievements();
