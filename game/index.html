@@ -24,22 +24,27 @@
 
 <!-- ===================== HUD ===================== -->
 <header id="hud">
-  <div class="hud-main">
-    <div id="mgr-face" class="mgr-face">
+  <div class="hud-bar">
+    <button id="mgr-face" class="mgr-face">
       <img id="mgr-face-img" alt="Manager" draggable="false">
       <span id="egg-tier" class="egg-tier">Edible</span>
+    </button>
+    <div class="hud-mid">
+      <div class="hud-cash">
+        <span class="cash-ic" data-ic="clout"></span>
+        <span id="clout-amt">0</span>
+        <small id="clout-mag"></small>
+      </div>
+      <div class="hud-sub">
+        <span class="sub-item"><i data-ic="chicken"></i><b id="hud-pop">0</b></span>
+        <span class="sub-item rate"><b id="cps-amt">0</b><em>/sec</em></span>
+        <span class="sub-item gem"><i data-ic="snap"></i><b id="gem-amt">0</b></span>
+        <span class="sub-item star"><i data-ic="star"></i><b id="star-amt">0</b></span>
+      </div>
     </div>
-    <div class="hud-clout">
-      <span id="clout-amt">0</span>
-      <small>COINS</small>
-    </div>
+    <button id="shop-quick" class="hud-purple" data-nav="shop"><span data-ic="shop"></span></button>
   </div>
-  <div class="hud-side">
-    <div class="hud-pill"><span id="cps-amt">0</span><small>/sec</small></div>
-    <div class="hud-pill gem"><span id="gem-amt">0</span><small class="cur-ic" data-ic="snap"></small></div>
-    <div class="hud-pill star"><span id="star-amt">0</span><small class="cur-ic" data-ic="star"></small></div>
-    <div class="hud-pill infl"><span id="infl-amt">×1.00</span><small>infl</small></div>
-  </div>
+  <div class="hud-capsule"><div id="farm-fill" class="capsule-fill"></div><span id="hud-popcap">0/0</span></div>
 </header>
 
 <main id="app">
@@ -60,14 +65,20 @@
     <!-- park name (tap to rename) -->
     <button id="park-name" class="park-name">ZekeRoss Ranch</button>
 
-    <!-- slim status bar -->
-    <div class="farm-popbar">
-      <span><b id="farm-pop">0</b>/<span id="farm-cap">0</span> chickens · <b id="farm-cps">0</b>/s</span>
-      <div class="pop-track"><div id="farm-fill" class="pop-fill"></div></div>
-    </div>
+    <!-- active boost chips (Egg-Inc style, left side) -->
+    <div id="farm-chips"></div>
 
-    <button id="hatch-btn" class="hatch-fab" aria-label="Hatch"><span data-ic="tap"></span></button>
-    <button id="build-btn" class="build-fab" aria-label="Build" data-ic="hammer"></button>
+    <!-- Egg-Inc bottom dock: white circles + big red hatch bar -->
+    <div id="farm-dock">
+      <div class="dock-circles">
+        <button class="dock-c" id="build-btn" aria-label="Build"><span data-ic="hammer"></span></button>
+        <button class="dock-c" data-nav="summon" aria-label="Draw"><span data-ic="summon"></span></button>
+        <button class="dock-c" data-nav="boosts" aria-label="Boosts"><span data-ic="boosts"></span></button>
+        <button class="dock-c" data-nav="shop" aria-label="Shop"><span data-ic="shop"></span></button>
+        <button class="dock-c" data-nav="stats" aria-label="More"><span data-ic="more"></span></button>
+      </div>
+      <button id="hatch-btn" class="hatch-bar" aria-label="Hatch"><span data-ic="chicken"></span></button>
+    </div>
 
     <!-- build catalog -->
     <div id="build-panel" class="build-panel">

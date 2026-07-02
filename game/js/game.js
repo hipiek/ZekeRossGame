@@ -5,7 +5,7 @@
 'use strict';
 
 const SAVE_KEY = "snapsquad.save.v1";
-const GAME_VERSION = "3.0.0";   // shown in Settings; keep in sync with package.json
+const GAME_VERSION = "3.1.0";   // shown in Settings; keep in sync with package.json
 const TICK_MS = 100;            // simulation tick
 const GOLD_INTERVAL = [16000, 34000];   // frisbee-cat spawn window (ms)
 const GOLDEN_INTERVAL = [70000, 160000]; // 3D golden-chicken event window (ms)
@@ -219,14 +219,24 @@ function screenShake(intensity){
   setTimeout(()=>a.classList.remove("sshaking"), 600);
 }
 
-/* ---------- HUD ---------- */
+/* ---------- HUD (Egg-Inc white pill bar) ---------- */
+const MAG_WORDS = ["","THOUSAND","MILLION","BILLION","TRILLION","QUADRILLION","QUINTILLION",
+  "SEXTILLION","SEPTILLION","OCTILLION","NONILLION","DECILLION","UNDECILLION","DUODECILLION","TREDECILLION"];
+function fmtMag(n){
+  if(n < 1000) return { num: fmt(n), word: "" };
+  let t = 0;
+  while(n >= 1000 && t < MAG_WORDS.length-1){ n /= 1000; t++; }
+  return { num: n.toFixed(3), word: MAG_WORDS[t] };
+}
 function renderHUD(){
-  $("#clout-amt").textContent = fmt(S.clout);
+  const m = fmtMag(S.clout);
+  $("#clout-amt").textContent = m.num;
+  const mag = $("#clout-mag"); if(mag) mag.textContent = m.word;
   $("#cps-amt").textContent = fmt(cps());
   $("#gem-amt").textContent = fmt(S.gems);
   $("#star-amt").textContent = fmt(S.stars);
-  $("#infl-amt").textContent = "×"+influenceMult().toFixed(2);
-  // manager face (top-left, Egg-Inc style) + egg tier
+  const pop = $("#hud-pop"); if(pop) pop.textContent = fmt(Math.floor(S.pop));
+  // manager face (where Egg Inc shows the egg) + egg tier
   const c = ROSTER_BY_ID[S.featured];
   const face = $("#mgr-face");
   if(face && face.dataset.cur !== S.featured){
@@ -246,10 +256,18 @@ const HOTSPOTS = [
 ];
 function renderFarm(){
   const cap = capacity();
-  $("#farm-pop").textContent = fmt(Math.floor(S.pop));
-  $("#farm-cap").textContent = fmt(cap);
-  $("#farm-fill").style.width = Math.min(100, S.pop/cap*100)+"%";
-  $("#farm-cps").textContent = fmt(cps());
+  const fill = $("#farm-fill"); if(fill) fill.style.width = Math.min(100, S.pop/cap*100)+"%";
+  const pc = $("#hud-popcap"); if(pc) pc.textContent = fmt(Math.floor(S.pop))+" / "+fmt(cap);
+
+  // Egg-Inc style boost chips on the left
+  const chips = $("#farm-chips");
+  if(chips){
+    const now = Date.now();
+    chips.innerHTML = S.activeBoosts.slice(0,4).map(b=>{
+      const A = b.sigName ? {icon:b.sigIcon} : ABILITIES[b.type]||EXTRA_BOOST[b.type]||BUFF_BY_ID[b.type]||{icon:"timer"};
+      return `<div class="farm-chip"><span class="fc-ic">${ic(A.icon)}</span><b>×${b.mult||""}</b><em>${Math.max(0,(b.until-now)/1000).toFixed(0)}s</em></div>`;
+    }).join("");
+  }
 
   HOTSPOTS.forEach(([key,,costFn])=>{
     const b = $("#hot-"+key); if(!b) return;

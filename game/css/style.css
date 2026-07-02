@@ -662,5 +662,85 @@ body.farm-active #farm-canvas{ opacity:1; }
 #rebrand-btn .ic{ width:17px; height:17px; }
 #rebrand-note .ic{ width:12px; height:12px; }
 
+/* ============================================================
+   EGG-INC STYLE SKIN — white pill HUD, dock circles, red hatch bar
+   ============================================================ */
+#hud{ background:none; backdrop-filter:none; padding:calc(var(--safe-top) + 10px) 12px 0;
+  display:flex; flex-direction:column; align-items:center; gap:0; }
+.hud-bar{ position:relative; width:100%; max-width:430px; background:#fff; border-radius:40px;
+  min-height:58px; display:flex; align-items:center; padding:6px 8px 6px 6px;
+  box-shadow:0 6px 18px rgba(0,0,0,.28); }
+.hud-bar .mgr-face{ width:56px; height:56px; margin:-6px 4px -6px -4px; border:none; background:none;
+  cursor:pointer; box-shadow:0 0 0 3px var(--ring,#f2a53a), 0 4px 10px rgba(0,0,0,.25); }
+.hud-mid{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px; }
+.hud-cash{ display:flex; align-items:baseline; gap:5px; line-height:1; }
+.hud-cash .cash-ic{ align-self:center; display:flex; }
+.hud-cash .cash-ic .ic{ width:15px; height:15px; color:#3bb54a; }
+#clout-amt{ font-size:24px; font-weight:900; color:#2b2b2b; letter-spacing:-0.5px;
+  background:none; -webkit-text-fill-color:#2b2b2b; text-shadow:none; }
+#clout-mag{ font-size:11px; font-weight:800; color:#3da9fc; letter-spacing:.5px; }
+.hud-sub{ display:flex; align-items:center; gap:10px; }
+.hud-sub .sub-item{ display:inline-flex; align-items:center; gap:3px; font-size:11px; color:#2b2b2b; }
+.hud-sub .sub-item b{ font-weight:800; }
+.hud-sub .sub-item em{ font-style:normal; color:#8a8f98; font-weight:700; font-size:10px; }
+.hud-sub .sub-item i{ display:inline-flex; }
+.hud-sub .sub-item i .ic{ width:12px; height:12px; color:#2b2b2b; }
+.hud-sub .gem i .ic{ color:#2196d8; }
+.hud-sub .star i .ic{ color:#e8a81f; }
+.hud-sub .rate b{ color:#2196d8; }
+.hud-purple{ width:46px; height:46px; margin-right:-2px; border-radius:50%; border:none; flex:none;
+  background:radial-gradient(circle at 38% 32%, #9b40e8, #6a0fb8); color:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(106,15,184,.45); }
+.hud-purple .ic{ width:22px; height:22px; }
+.hud-purple:active{ transform:scale(.94); }
+.hud-bar .egg-tier{ background:#2b2b2b; border-color:#fff; }
+.hud-capsule{ position:relative; width:120px; height:14px; margin-top:-2px; background:#fff; border-radius:10px;
+  overflow:hidden; box-shadow:0 3px 8px rgba(0,0,0,.25); }
+.capsule-fill{ position:absolute; inset:2px; width:0; border-radius:8px;
+  background:linear-gradient(180deg,#5ecb3f,#3bb54a); transition:width .2s; }
+.hud-capsule span{ position:relative; display:block; text-align:center; font-size:9px; font-weight:900;
+  color:#1c3a12; line-height:14px; letter-spacing:.3px; }
+
+/* farm dock: white circles + big red hatch bar; hide the tab bar on farm */
+body.farm-active #bottom-nav{ display:none; }
+body.farm-active #app{ padding-bottom:0; }
+#farm-dock{ position:fixed; left:0; right:0; bottom:0; z-index:6;
+  padding:0 14px calc(var(--safe-bot) + 12px); display:flex; flex-direction:column; gap:10px; }
+.dock-circles{ display:flex; justify-content:center; gap:14px; }
+.dock-c{ width:52px; height:52px; border-radius:50%; border:none; background:#fff; color:#2b2b2b;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 5px 14px rgba(0,0,0,.3); }
+.dock-c .ic{ width:24px; height:24px; }
+.dock-c:active{ transform:scale(.92); }
+.hatch-bar{ width:100%; max-width:430px; margin:0 auto; height:74px; border:none; border-radius:26px;
+  background:linear-gradient(180deg,#f04b3e,#d92b1f); color:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 22px rgba(217,43,31,.45), inset 0 -4px 0 rgba(0,0,0,.15); }
+.hatch-bar .ic{ width:40px; height:40px; }
+.hatch-bar:active{ transform:scale(.985); }
+.hatch-bar.full{ background:linear-gradient(180deg,#9aa1ad,#7d8593); box-shadow:0 8px 22px rgba(0,0,0,.25); }
+
+/* active boost chips, Egg-Inc left column */
+#farm-chips{ position:fixed; left:12px; top:calc(var(--safe-top) + 118px); z-index:4;
+  display:flex; flex-direction:column; gap:7px; pointer-events:none; }
+.farm-chip{ display:inline-flex; align-items:center; gap:5px; background:#fff; border-radius:20px;
+  padding:4px 10px 4px 4px; box-shadow:0 4px 10px rgba(0,0,0,.25); width:max-content; }
+.farm-chip .fc-ic{ width:22px; height:22px; border-radius:50%; background:#3da9fc; color:#fff;
+  display:flex; align-items:center; justify-content:center; }
+.farm-chip .fc-ic .ic{ width:13px; height:13px; }
+.farm-chip b{ font-size:12px; color:#2b2b2b; }
+.farm-chip em{ font-style:normal; font-size:10px; font-weight:800; color:#8a8f98; }
+
+/* hotspot pins go white like Egg-Inc labels */
+.hotspot{ background:#fff; border:none; color:#2b2b2b; box-shadow:0 5px 14px rgba(0,0,0,.3); }
+.hotspot::after{ border-top-color:#fff; }
+.hotspot .hot-lvl{ color:#8a8f98; }
+.hotspot .hot-cost{ color:#e8a81f; }
+.hotspot.cant .hot-cost{ color:#b3b8c2; }
+
+/* park name pill sits under the capsule */
+.park-name{ top:calc(var(--safe-top) + 96px); background:rgba(255,255,255,.92); border:none;
+  color:#2b2b2b; box-shadow:0 4px 10px rgba(0,0,0,.25); }
+
 /* scrollbar */
 ::-webkit-scrollbar{ width:0; height:0; }
