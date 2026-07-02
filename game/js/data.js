@@ -193,6 +193,18 @@ const BUFF_POOL = [
 ];
 const BUFF_BY_ID = Object.fromEntries(BUFF_POOL.map(b => [b.id, b]));
 
+/* ============================================================
+   TYCOON BUILD CATALOG — buildings placeable on the map grid.
+   Each placed building adds +2% income. Cost scales per copy.
+   ============================================================ */
+const BUILD_CATALOG = [
+  { id:"tree",     name:"Tree",            icon:"paint",  cost:400,    desc:"+2% income · decorative" },
+  { id:"barn",     name:"Red Barn",        icon:"shop",   cost:6000,   desc:"+2% income · classic" },
+  { id:"statue",   name:"Golden Chicken",  icon:"star",   cost:80000,  desc:"+2% income · glorious" },
+  { id:"fountain", name:"Fountain",        icon:"snap",   cost:1.2e6,  desc:"+2% income · fancy" },
+];
+const BUILD_BY_ID = Object.fromEntries(BUILD_CATALOG.map(b => [b.id, b]));
+
 /* Rare cosmetics (small draw chance). Some apply a visible change. */
 const COSMETICS = [
   { id:"gold_chickens", name:"Golden Chickens", icon:"star",  apply:"gold", text:"Your whole flock turns gold" },

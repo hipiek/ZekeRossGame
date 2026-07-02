@@ -57,6 +57,9 @@
       <button class="hotspot" id="hot-veh"   data-upg="veh"><b>Vehicles</b><span class="hot-lvl">Lv 0</span><em class="hot-cost">—</em></button>
     </div>
 
+    <!-- park name (tap to rename) -->
+    <button id="park-name" class="park-name">ZekeRoss Ranch</button>
+
     <!-- slim status bar -->
     <div class="farm-popbar">
       <span><b id="farm-pop">0</b>/<span id="farm-cap">0</span> chickens · <b id="farm-cps">0</b>/s</span>
@@ -64,6 +67,18 @@
     </div>
 
     <button id="hatch-btn" class="hatch-fab" aria-label="Hatch"><span data-ic="tap"></span></button>
+    <button id="build-btn" class="build-fab" aria-label="Build" data-ic="hammer"></button>
+
+    <!-- build catalog -->
+    <div id="build-panel" class="build-panel">
+      <div class="build-head">
+        <b>Build your park</b>
+        <span id="build-count" class="muted">0 placed</span>
+        <button id="build-close" class="x-btn" data-ic="close"></button>
+      </div>
+      <div id="build-list" class="build-list"></div>
+      <p class="hint">Pick one, then tap the grass to place it. Each building adds +2% income.</p>
+    </div>
   </section>
 
   <!-- ===================== SUMMON SCREEN ===================== -->

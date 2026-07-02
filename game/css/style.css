@@ -108,9 +108,16 @@ small{ font-weight:600; }
 @keyframes particle-fly{ 0%{opacity:1; transform:translate(-50%,-50%);} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)));} }
 
 /* golden snap */
-.gold-snap{ position:fixed; z-index:55; width:78px; cursor:pointer; pointer-events:auto;
-  filter:drop-shadow(0 0 12px var(--gold)); animation:gold-glow 1s ease-in-out infinite; }
+.gold-snap{ position:fixed; z-index:55; width:82px; cursor:pointer; pointer-events:auto;
+  perspective:260px; filter:drop-shadow(0 0 12px var(--gold)); animation:gold-glow 1s ease-in-out infinite; }
 .gold-snap img{ width:100%; height:auto; display:block; pointer-events:none; }
+/* spins in 3D like a thrown frisbee: tilted disc + fast rotation + wobble */
+.gold-snap .frisbee{ animation:frisbee .55s linear infinite; transform-style:preserve-3d; }
+@keyframes frisbee{
+  0%   { transform:rotateX(58deg) rotateZ(0deg)   rotateY(4deg); }
+  50%  { transform:rotateX(52deg) rotateZ(180deg) rotateY(-4deg); }
+  100% { transform:rotateX(58deg) rotateZ(360deg) rotateY(4deg); }
+}
 @keyframes gold-glow{ 0%,100%{filter:drop-shadow(0 0 8px var(--gold));} 50%{filter:drop-shadow(0 0 20px #fff);} }
 
 /* ---------------- SQUAD ---------------- */
@@ -453,7 +460,7 @@ body.farm-active #farm-canvas{ opacity:1; }
 /* farm screen: transparent overlays on top of the 3D scene */
 #screen-farm{ padding:0; }
 #screen-farm.active{ display:block; }
-.farm-flex{ position:fixed; inset:0; z-index:1; }   /* tap field to hatch */
+.farm-flex{ position:fixed; inset:0; z-index:1; touch-action:none; }  /* tap = hatch/place · drag = camera */
 
 /* upgrade hotspots anchored to 3D buildings (positioned by JS) */
 #farm-hotspots{ position:fixed; inset:0; z-index:3; pointer-events:none; }
@@ -481,6 +488,39 @@ body.farm-active #farm-canvas{ opacity:1; }
 .farm-popbar b{ color:var(--green); }
 .pop-track{ height:6px; background:#222b47; border-radius:6px; overflow:hidden; }
 .pop-fill{ height:100%; width:0; background:linear-gradient(90deg,#34d399,#3da9fc); transition:width .2s; }
+
+/* park name pill (tap to rename) */
+.park-name{ position:fixed; left:50%; transform:translateX(-50%); top:calc(var(--safe-top) + 112px);
+  z-index:4; background:rgba(11,15,26,.66); backdrop-filter:blur(8px); border:1px solid #3a4570;
+  color:#fff; font-weight:900; font-size:13px; letter-spacing:.5px; padding:7px 16px; border-radius:20px;
+  max-width:70vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+.park-name:active{ transform:translateX(-50%) scale(.96); }
+
+/* build FAB + catalog panel */
+.build-fab{ position:fixed; right:18px; bottom:calc(202px + var(--safe-bot)); z-index:6;
+  width:54px; height:54px; border-radius:50%; border:2px solid #fff;
+  background:radial-gradient(circle at 40% 35%, #4db2ff, #1f6fd0); color:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(31,111,208,.5); }
+.build-fab .ic{ width:24px; height:24px; }
+.build-fab:active{ transform:scale(.94); }
+.build-panel{ position:fixed; left:12px; right:12px; bottom:calc(78px + var(--safe-bot)); z-index:7;
+  background:rgba(13,17,30,.96); backdrop-filter:blur(10px); border:1px solid #2a3358; border-radius:18px;
+  padding:12px 14px; display:none; }
+.build-panel.show{ display:block; animation:slideUp .22s ease; }
+.build-head{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.build-head b{ flex:1; font-size:15px; }
+.build-head .muted{ font-size:11px; }
+.build-list{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.build-item{ background:var(--panel2); border:1px solid #3a4570; border-radius:12px; padding:9px 4px;
+  color:var(--txt); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; text-align:center; }
+.build-item.on{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold); }
+.build-item.cant{ opacity:.55; }
+.build-item .bi-ic .ic{ width:22px; height:22px; color:var(--accent); }
+.build-item b{ font-size:11px; }
+.build-item small{ font-size:8px; color:var(--muted); line-height:1.2; }
+.build-item em{ font-style:normal; font-weight:900; font-size:10px; color:var(--gold);
+  display:inline-flex; align-items:center; gap:2px; }
+.build-item em .ic{ width:10px; height:10px; }
 
 /* round HATCH action button (Egg-Inc style) */
 .hatch-fab{ position:fixed; right:18px; bottom:calc(120px + var(--safe-bot)); z-index:6;

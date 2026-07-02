@@ -5,7 +5,7 @@
 'use strict';
 
 const SAVE_KEY = "snapsquad.save.v1";
-const GAME_VERSION = "2.2.0";   // shown in Settings; keep in sync with package.json
+const GAME_VERSION = "2.3.0";   // shown in Settings; keep in sync with package.json
 const TICK_MS = 100;            // simulation tick
 const COMBO_WINDOW = 900;       // ms to keep a combo alive
 const COMBO_MAX = 30;           // max combo multiplier contribution
@@ -61,6 +61,8 @@ function freshState(){
     gacha: freshGacha(),   // per-banner pity/50-50 state
     wishlist: [],          // (legacy — unused since rolls give buffs)
     cosmetics: [],         // owned cosmetic ids from draws
+    parkName: "ZekeRoss Ranch",   // the player's egg park name
+    buildings: [],         // placed tycoon buildings: {t, gx, gz}
     bannerEnds: freshBannerEnds(),
     shop: { day:0, bought:{} },  // daily shop purchase counts
     stats: { totalTaps:0, totalClout:0, goldCaught:0, bestCombo:0, rebrands:0, totalPulls:0, playStart:Date.now() },
@@ -99,6 +101,8 @@ function load(){
     if(!S.upg) S.upg = { hab:0, feed:0, hatch:0 };
     if(typeof S.upg.veh !== "number") S.upg.veh = 0;
     if(!Array.isArray(S.cosmetics)) S.cosmetics = [];
+    if(typeof S.parkName !== "string" || !S.parkName) S.parkName = "ZekeRoss Ranch";
+    if(!Array.isArray(S.buildings)) S.buildings = [];
     return true;
   } catch(e){ return false; }
 }
@@ -129,13 +133,14 @@ function featuredBonus(){
 function farmMult(){ return collectionMult() * featuredBonus(); }
 
 function vehMult(){ return Math.pow(1.4, S.upg.veh); }       // vehicles = shipping/coin multiplier
+function decoMult(){ return 1 + S.buildings.length * 0.02; } // each placed building +2%
 function idleMult(){
   let m = influenceMult();
   for(const b of S.activeBoosts){ if(b.kind==="idle" || b.kind==="all") m *= b.mult; }
   return m;
 }
 /* coins per second produced by the flock */
-function cps(){ return S.pop * eggValue() * farmMult() * vehMult() * idleMult(); }
+function cps(){ return S.pop * eggValue() * farmMult() * vehMult() * decoMult() * idleMult(); }
 
 /* ---- upgrade costs (steep = slow, deliberate progression) ---- */
 function habCost(){   return Math.ceil(120  * Math.pow(9, S.upg.hab)); }
@@ -271,6 +276,56 @@ function positionHotspots(){
       b.classList.remove("off");
     } else b.classList.add("off");
   });
+}
+
+/* ---------- park name ---------- */
+function renderParkName(){
+  const el2 = $("#park-name"); if(el2) el2.textContent = S.parkName;
+}
+function renamePark(){
+  const n = prompt("Name your egg park:", S.parkName);
+  if(n && n.trim()){ S.parkName = n.trim().slice(0, 24); renderParkName(); save(); toast("Welcome to "+S.parkName+"!", "#34d399"); }
+}
+
+/* ---------- tycoon build mode ---------- */
+let buildMode = null;   // selected BUILD_CATALOG id while placing
+function buildCost(id){
+  const b = BUILD_BY_ID[id];
+  const copies = S.buildings.filter(x=>x.t===id).length;
+  return Math.ceil(b.cost * Math.pow(1.35, copies));
+}
+function renderBuildPanel(){
+  const wrap = $("#build-list"); if(!wrap) return; wrap.innerHTML="";
+  BUILD_CATALOG.forEach(b=>{
+    const cost = buildCost(b.id);
+    const card = el("button","build-item"+(buildMode===b.id?" on":"")+(S.clout<cost?" cant":""));
+    card.dataset.build = b.id;
+    card.innerHTML = `<span class="bi-ic">${ic(b.icon)}</span><b>${b.name}</b>
+      <small>${b.desc}</small><em>${fmt(cost)} ${ic('clout')}</em>`;
+    wrap.appendChild(card);
+  });
+  $("#build-count").textContent = S.buildings.length + " placed · +"+(S.buildings.length*2)+"% income";
+}
+function toggleBuildPanel(open){
+  const p = $("#build-panel");
+  const on = open!==undefined ? open : !p.classList.contains("show");
+  p.classList.toggle("show", on);
+  if(on) renderBuildPanel();
+}
+function tryPlaceBuilding(px, py){
+  if(!buildMode || !window.World || !World.gridFromScreen) return false;
+  const cell = World.gridFromScreen(px, py);
+  if(!cell){ toast("Tap the grass"); return true; }
+  if(!World.canPlace(buildMode, cell.gx, cell.gz)){ toast("Can't build there"); return true; }
+  const cost = buildCost(buildMode);
+  if(S.clout < cost){ toast("Not enough Coins"); return true; }
+  S.clout -= cost;
+  World.addBuilding(buildMode, cell.gx, cell.gz, true);
+  S.buildings.push({ t:buildMode, gx:cell.gx, gz:cell.gz });
+  haptic(35); toast(BUILD_BY_ID[buildMode].name+" built! (+2% income)", "#34d399");
+  buildMode = null; toggleBuildPanel(false);
+  renderHUD(); renderFarm(); save();
+  return true;
 }
 
 /* tap the farm / hatch button -> add chickens */
@@ -794,14 +849,17 @@ function renderBoosts(){
    ============================================================ */
 let goldTimer = 0;
 function spawnGold(){
-  const g = el("div","gold-snap",`<img src="assets/fx/cookiecat.webp" alt="Golden Cat">`);
-  g.style.top = (20 + Math.random()*60)+"vh";
-  g.style.left = "-12vw";
+  // the golden cat flies past spinning like a frisbee (3D disc, Egg-Inc drone style)
+  const g = el("div","gold-snap",`<img class="frisbee" src="assets/fx/cookiecat.webp" alt="Golden Cat">`);
+  g.style.top = (18 + Math.random()*55)+"vh";
+  g.style.left = "-14vw";
   $("#fx-layer").appendChild(g);
   const dur = 5200 + Math.random()*2200;
+  const arc = (Math.random()<0.5?-1:1) * (6+Math.random()*8);
   g.animate([
-    { transform:"translateX(0) rotate(0deg)" },
-    { transform:`translateX(124vw) rotate(${Math.random()<.5?360:-360}deg)` }
+    { transform:"translateX(0) translateY(0)" },
+    { transform:`translateX(62vw) translateY(${arc}vh)`, offset:0.5 },
+    { transform:"translateX(126vw) translateY(0)" }
   ], { duration:dur, easing:"linear" });
   let caught=false;
   g.addEventListener("pointerdown", e=>{
@@ -1044,12 +1102,27 @@ function applyOffline(){
    ============================================================ */
 let hatchHold = null;
 function bindEvents(){
-  // tap the field to hatch; press-and-hold the HATCH button to hatch fast
+  // field: camera controls (1-finger twist, 2-finger pan, pinch zoom);
+  // a short tap either places a building (build mode) or hatches
   const field = $("#screen-farm .farm-flex");
-  if(field) field.addEventListener("pointerdown", e=>{
-    if(e.target.closest(".gold-snap")) return;
-    doHatch(e.clientX, e.clientY);
+  if(field && window.World && World.attachControls){
+    World.attachControls(field, { onTap:(x,y)=>{
+      if(document.elementFromPoint(x,y)?.closest?.(".gold-snap")) return;
+      if(buildMode){ tryPlaceBuilding(x,y); return; }
+      doHatch(x,y);
+    }});
+  }
+
+  // build mode + park name
+  $("#build-btn")?.addEventListener("click", ()=>toggleBuildPanel());
+  $("#build-close")?.addEventListener("click", ()=>toggleBuildPanel(false));
+  $("#build-list")?.addEventListener("click", e=>{
+    const b=e.target.closest("[data-build]"); if(!b) return;
+    buildMode = (buildMode===b.dataset.build) ? null : b.dataset.build;
+    renderBuildPanel();
+    if(buildMode){ toggleBuildPanel(false); $("#build-panel").classList.remove("show"); toast("Tap the grass to place — 1 finger twists, 2 pan"); }
   });
+  $("#park-name")?.addEventListener("click", renamePark);
   const hb = $("#hatch-btn");
   if(hb){
     const start = e=>{ e.preventDefault(); doHatch(); clearInterval(hatchHold); hatchHold=setInterval(()=>doHatch(), 120); };
@@ -1136,8 +1209,11 @@ function boot(){
       World.init($("#farm-canvas"));
       World.setPopulation(S.pop);
       if(S.cosmetics.includes("gold_chickens")) World.setGoldChickens(true);
+      S.buildings.forEach(b=>World.addBuilding(b.t, b.gx, b.gz, true)); // restore park
+      World.onFrame = positionHotspots;   // hotspots track buildings as the camera moves
     }
   } catch(e){ console.warn("3D world unavailable", e); }
+  renderParkName();
   renderAll();
   showScreen("farm");
   checkAchievements();

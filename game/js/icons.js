@@ -37,6 +37,8 @@ const ICON_PATHS = {
   close:   '<path d="M6 6l12 12M18 6 6 18" stroke-width="2.2"/>',
   skip:    '<path d="M4.5 5l7.5 7-7.5 7zM12.5 5l7.5 7-7.5 7z" fill="currentColor" stroke="none"/>',
   cones:   '<path d="M3 8.5h18v4.5H3z"/><path d="M6 13v7M18 13v7M5 8.5 8 5.5M11 8.5l3-3M17 8.5l3-3"/>',
+  hammer:  '<path d="M14.5 4.5 19 9l-2.6 2.6a2 2 0 0 1-2.8 0L10.4 8.4a2 2 0 0 1 0-2.8z" fill="currentColor" stroke="none"/><path d="M11 9.8 4 16.8a1.7 1.7 0 0 0 2.4 2.4l7-7" stroke-width="2.2"/>',
+  flag:    '<path d="M6 21V4"/><path d="M6 5h11l-2.5 3.5L17 12H6"/>',
   bolt:    '<path d="M13 2 4 13.5h6L9 22l9-12h-6z" fill="currentColor" stroke="none"/>',
   paint:   '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.9 0-.5-.4-1-.4-1.6 0-.8.6-1.5 1.6-1.5H17a4 4 0 0 0 4-4c0-4.5-4-9-9-9z"/><circle cx="8" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="10.5" r="1" fill="currentColor" stroke="none"/>',
 };
