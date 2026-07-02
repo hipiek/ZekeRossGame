@@ -1,0 +1,136 @@
+name: Build Android APK & Release
+
+# Build a sideloadable APK and publish it to a GitHub Release.
+#
+# Triggers (any of):
+#   - push a tag like v1.0.0
+#   - push a commit whose message contains "[release]"
+#   - run manually from the Actions tab (workflow_dispatch)
+#
+# The release tag/version is taken from the pushed tag, the workflow_dispatch
+# input, or (fallback) the "version" field in package.json -> v<version>.
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version, e.g. v1.0.0 (defaults to package.json version)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # Only do the (heavy) build when we actually intend to release.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.ref_type == 'tag' ||
+      contains(github.event.head_commit.message, '[release]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Resolve release version
+        id: ver
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            V="${{ github.ref_name }}"
+          elif [ -n "${{ github.event.inputs.version }}" ]; then
+            V="${{ github.event.inputs.version }}"
+          else
+            V="v$(node -p "require('./package.json').version")"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $V"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add Android platform (Capacitor)
+        run: npx cap add android
+
+      - name: Apply branded launcher icons
+        run: cp -R resources/android-res/. android/app/src/main/res/
+
+      - name: Stamp app version
+        run: |
+          VN="${{ steps.ver.outputs.version }}"; VN="${VN#v}"
+          IFS='.' read -r MA MI PA <<< "$VN"
+          VC=$(( ${MA:-1} * 10000 + ${MI:-0} * 100 + ${PA:-0} ))
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$VN\"/" android/app/build.gradle
+          sed -i "s/versionCode [0-9]*/versionCode $VC/" android/app/build.gradle
+          grep -nE "versionName|versionCode" android/app/build.gradle
+
+      - name: Sync web assets into native project
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Stage APK with versioned name
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+             "dist/SnapSquad-${{ steps.ver.outputs.version }}.apk"
+          ls -lh dist
+
+      - name: Upload APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SnapSquad-${{ steps.ver.outputs.version }}
+          path: dist/*.apk
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          github.ref_type == 'tag' ||
+          contains(github.event.head_commit.message, '[release]')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: SNAP SQUAD ${{ steps.ver.outputs.version }}
+          files: dist/*.apk
+          generate_release_notes: true
+          body: |
+            ## 📱 SNAP SQUAD: Clout Empire — ${{ steps.ver.outputs.version }}
+
+            Download **`SnapSquad-${{ steps.ver.outputs.version }}.apk`** below and install it on your Android phone.
+
+            ### Install
+            1. Download the `.apk` to your phone.
+            2. Open it. If prompted, allow **"Install unknown apps"** for your browser/file manager.
+            3. Tap **Install**, then launch **SNAP SQUAD** from your app drawer.
+
+            > This is a debug-signed build for easy sideloading. Android may show an
+            > "unknown developer" warning — that's expected for apps installed outside
+            > the Play Store.

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="icon" href="assets/icons/icon-192.png" type="image/png">
+<title>Snap Squad: Clout Empire</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- 3D farm world (fixed background, shown on the Farm screen) -->
+<canvas id="farm-canvas"></canvas>
+
+<!-- FX layer for floaters/particles/golden cats -->
+<div id="fx-layer"></div>
+<div id="toast"></div>
+
+<!-- ===================== HUD ===================== -->
+<header id="hud">
+  <div class="hud-bar">
+    <button id="mgr-face" class="mgr-face">
+      <img id="mgr-face-img" alt="Manager" draggable="false">
+      <span id="egg-tier" class="egg-tier">Edible</span>
+    </button>
+    <div class="hud-mid">
+      <div class="hud-cash">
+        <span class="cash-ic" data-ic="clout"></span>
+        <span id="clout-amt">0</span>
+        <small id="clout-mag"></small>
+      </div>
+      <div class="hud-sub">
+        <span class="sub-item"><i data-ic="chicken"></i><b id="hud-pop">0</b></span>
+        <span class="sub-item rate"><b id="cps-amt">0</b><em>/sec</em></span>
+        <span class="sub-item gem"><i data-ic="snap"></i><b id="gem-amt">0</b></span>
+        <span class="sub-item star"><i data-ic="star"></i><b id="star-amt">0</b></span>
+      </div>
+    </div>
+    <button id="shop-quick" class="hud-purple" data-nav="shop"><span data-ic="shop"></span></button>
+  </div>
+  <div class="hud-capsule"><div id="farm-fill" class="capsule-fill"></div><span id="hud-popcap">0/0</span></div>
+</header>
+
+<main id="app">
+
+  <!-- ===================== FARM SCREEN ===================== -->
+  <section id="screen-farm" class="screen active">
+    <!-- tap the open field to hatch -->
+    <div class="farm-flex"></div>
+
+    <!-- upgrade hotspots anchored to the 3D buildings (positioned by JS) -->
+    <div id="farm-hotspots">
+      <button class="hotspot" id="hot-hab"   data-upg="hab"><b>Habitat</b><span class="hot-lvl">Lv 0</span><em class="hot-cost">—</em></button>
+      <button class="hotspot" id="hot-feed"  data-upg="feed"><b>Feed</b><span class="hot-lvl">Lv 0</span><em class="hot-cost">—</em></button>
+      <button class="hotspot" id="hot-hatch" data-upg="hatch"><b>Hatchery</b><span class="hot-lvl">Lv 0</span><em class="hot-cost">—</em></button>
+      <button class="hotspot" id="hot-veh"   data-upg="veh"><b>Vehicles</b><span class="hot-lvl">Lv 0</span><em class="hot-cost">—</em></button>
+    </div>
+
+    <!-- park name (tap to rename) -->
+    <button id="park-name" class="park-name">ZekeRoss Ranch</button>
+
+    <!-- active boost chips (Egg-Inc style, left side) -->
+    <div id="farm-chips"></div>
+
+    <!-- Egg-Inc bottom dock: white circles + big red hatch bar -->
+    <div id="farm-dock">
+      <div class="dock-circles">
+        <button class="dock-c" id="build-btn" aria-label="Build"><span data-ic="hammer"></span></button>
+        <button class="dock-c" data-nav="summon" aria-label="Draw"><span data-ic="summon"></span></button>
+        <button class="dock-c" data-nav="boosts" aria-label="Boosts"><span data-ic="boosts"></span></button>
+        <button class="dock-c" data-nav="shop" aria-label="Shop"><span data-ic="shop"></span></button>
+        <button class="dock-c" data-nav="stats" aria-label="More"><span data-ic="more"></span></button>
+      </div>
+      <button id="hatch-btn" class="hatch-bar" aria-label="Hatch"><span data-ic="chicken"></span></button>
+    </div>
+
+    <!-- build catalog -->
+    <div id="build-panel" class="build-panel">
+      <div class="build-head">
+        <b>Build your park</b>
+        <span id="build-count" class="muted">0 placed</span>
+        <button id="demolish-btn" class="x-btn demolish" title="Demolish" data-ic="cones"></button>
+        <button id="build-close" class="x-btn" data-ic="close"></button>
+      </div>
+      <div id="build-list" class="build-list"></div>
+      <p class="hint">Pick one, then tap the grass to place it. Each building adds +2% income.</p>
+    </div>
+  </section>
+
+  <!-- ===================== SUMMON SCREEN ===================== -->
+  <section id="screen-summon" class="screen">
+    <div id="banner-tabs" class="banner-tabs"></div>
+
+    <div class="banner-head">
+      <div>
+        <h2 id="banner-name">Snap Summon</h2>
+        <p id="banner-tagline" class="banner-tagline">Featured Legendary — limited time</p>
+      </div>
+      <span id="banner-timer" class="banner-timer">—</span>
+    </div>
+
+    <div id="featured-stage" class="featured-stage"></div>
+
+    <div class="pity-box">
+      <div class="pity-row">
+        <span>Guaranteed <b id="pity-top">Legendary</b> in <b id="pity-count">100</b> pulls</span>
+        <span id="fifty-state" class="fifty">50/50 next</span>
+      </div>
+      <div class="pity-track"><div id="pity-fill" class="pity-fill"></div></div>
+    </div>
+
+    <div class="summon-buttons">
+      <button id="pull-1" class="big-btn">Summon ×1 · <b id="single-cost">5</b><span id="single-cur" class="btn-cur"></span></button>
+      <button id="pull-10" class="big-btn alt">Summon ×10 · <b id="ten-cost">45</b><span id="ten-cur" class="btn-cur"></span></button>
+    </div>
+
+    <h3 class="odds-title">Buff Odds <small>(per draw)</small></h3>
+    <div id="odds-list" class="odds"></div>
+    <p class="hint center">Common &amp; Rare pulls refund half their recruit price as Clout. Epic+ are summon-only.</p>
+  </section>
+
+  <!-- ===================== SHOP SCREEN ===================== -->
+  <section id="screen-shop" class="screen">
+    <div class="screen-head"><h2>Clout Shop</h2><span class="counter">Restocks daily</span></div>
+    <p class="hint">Spend Clout &amp; Snaps on packs and boosts. Some deals restock every day.</p>
+    <div id="shop-list" class="shop-list"></div>
+  </section>
+
+  <!-- ===================== BOOSTS SCREEN ===================== -->
+  <section id="screen-boosts" class="screen">
+    <div class="screen-head"><h2>Boosts &amp; Abilities</h2></div>
+    <div id="active-boosts" class="active-boosts"></div>
+    <p class="hint">Fire off your squad's signature abilities. Each has its own cooldown.</p>
+    <div id="boost-list"></div>
+  </section>
+
+  <!-- ===================== STATS / MORE SCREEN ===================== -->
+  <section id="screen-stats" class="screen">
+    <div class="screen-head"><h2>Daily Goals</h2></div>
+    <div id="goals-list" class="goals-list"></div>
+
+    <div class="screen-head"><h2>Daily Reward</h2></div>
+    <div id="daily-box" class="daily-box"></div>
+
+    <div class="screen-head"><h2>Rebrand <small>(Prestige)</small></h2></div>
+    <div class="prestige-box">
+      <div class="prestige-row"><span>Influence</span><b id="infl-have">0</b></div>
+      <div class="prestige-row"><span>Pending</span><b id="infl-pending" class="green">+0</b></div>
+      <div class="prestige-row"><span>New multiplier</span><b id="infl-bonus">×1.00</b></div>
+      <button id="rebrand-btn" class="big-btn alt"><span data-ic="recycle"></span> Rebrand</button>
+      <p id="rebrand-note" class="hint"></p>
+    </div>
+
+    <div class="screen-head"><h2>Stats</h2></div>
+    <div id="stats-list" class="stats-list"></div>
+
+    <div class="screen-head"><h2>Achievements</h2></div>
+    <div id="ach-list" class="ach-list"></div>
+
+    <div class="screen-head"><h2>Settings</h2></div>
+    <div class="settings-box">
+      <label class="opt"><span>Sound &amp; effects</span><input type="checkbox" id="opt-sfx" checked></label>
+      <label class="opt"><span>Haptics (vibrate)</span><input type="checkbox" id="opt-haptics" checked></label>
+      <button id="wipe-btn" class="danger-btn">Erase all progress</button>
+      <p class="credit">SNAP SQUAD: Clout Empire — starring the crew. Tap responsibly.<br>v<span id="app-version">—</span></p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== BOTTOM NAV ===================== -->
+<nav id="bottom-nav">
+  <button data-nav="farm" class="on"><span data-ic="tap"></span>Farm</button>
+  <button data-nav="summon"><span data-ic="summon"></span>Draw</button>
+  <button data-nav="boosts"><span data-ic="boosts"></span>Boosts</button>
+  <button data-nav="shop"><span data-ic="shop"></span>Shop</button>
+  <button data-nav="stats"><span data-ic="more"></span>More</button>
+</nav>
+
+<!-- ===================== OVERLAYS ===================== -->
+<div id="summon-overlay" class="overlay summon-overlay">
+  <div id="summon-charge" class="summon-charge">
+    <div class="charge-arena">
+      <img id="summon-mascot" class="summon-mascot" src="assets/fx/summoner.webp" alt="Summoning!">
+    </div>
+    <div class="charge-word">SUMMONING</div>
+  </div>
+  <div id="summon-cards" class="summon-cards"></div>
+  <button id="summon-skip" class="summon-skip">SKIP <span data-ic="skip"></span></button>
+  <button id="summon-continue" class="summon-continue">TAP TO CONTINUE</button>
+</div>
+
+<!-- ===================== MANAGER CAROUSEL ===================== -->
+<div id="manager-overlay" class="overlay manager-overlay">
+  <div class="manager-panel">
+    <div class="manager-head">
+      <div>
+        <h2>Managers</h2>
+        <span class="manager-sub">Unlock the next with Coins · <b id="manager-count">0/0</b></span>
+      </div>
+      <button id="manager-close" class="x-btn" data-ic="close"></button>
+    </div>
+    <div id="manager-carousel" class="manager-carousel"></div>
+    <p class="hint center">Swipe → to see who's next. Progress manager to manager to power up your farm.</p>
+  </div>
+</div>
+
+<div id="offline-overlay" class="overlay">
+  <div class="overlay-inner card-panel">
+    <h2>Welcome back!</h2>
+    <p>You were away for <b id="offline-time">—</b>.</p>
+    <p class="big-earn">+<span id="offline-amt">0</span> Coins</p>
+    <p class="hint">(earned at 50% idle rate while away)</p>
+    <button id="offline-collect" class="big-btn">Collect</button>
+  </div>
+</div>
+
+<script type="module" src="js/world3d.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

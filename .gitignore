@@ -1,0 +1,11 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Capacitor native project (generated in CI from config)
+/android/
+
+# Build output
+*.apk
+*.aab
+.gradle/
